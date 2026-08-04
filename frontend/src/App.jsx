@@ -5,9 +5,10 @@ import AiAssistant from './components/AiAssistant';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import VendorShopProfilePage from './pages/VendorShopProfilePage';
 
 export default function App() {
-  const [view, setView] = useState('landing'); // 'landing' | 'login' | 'register'
+  const [view, setView] = useState('landing'); // 'landing' | 'login' | 'register' | 'vendor-profile'
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
 
@@ -24,7 +25,12 @@ export default function App() {
   const handleLoginSuccess = (userData, userToken) => {
     setUser(userData);
     setToken(userToken);
-    setView('landing');
+
+    if (userData?.role === 'vendor') {
+      setView('vendor-profile');
+    } else {
+      setView('landing');
+    }
   };
 
   const handleSignOut = () => {
@@ -43,14 +49,16 @@ export default function App() {
       {/* Pages Container */}
       <main style={{ flexGrow: 1 }}>
         {view === 'landing' && <LandingPage />}
-        
+
         {view === 'login' && (
           <LoginPage onLoginSuccess={handleLoginSuccess} onViewChange={setView} />
         )}
-        
+
         {view === 'register' && (
           <RegisterPage onRegisterSuccess={handleLoginSuccess} onViewChange={setView} />
         )}
+
+        {view === 'vendor-profile' && <VendorShopProfilePage />}
       </main>
 
       {/* Floating AI Chat Assistant */}
