@@ -10,10 +10,11 @@ import VendorProductListingPage from './pages/VendorProductListingPage';
 import AdminApprovalPage from './pages/AdminApprovalPage';
 import AdminProductManagementPage from './pages/AdminProductManagementPage';
 import AdminVendorManagementPage from './pages/AdminVendorManagementPage';
+import AdminReportingPage from './pages/AdminReportingPage';
 import ShopCatalogPage from './pages/ShopCatalogPage';
 
 export default function App() {
-  const [view, setView] = useState('landing'); // 'landing' | 'login' | 'register' | 'vendor-profile' | 'vendor-listing' | 'admin-approval' | 'admin-product' | 'admin-vendor' | 'shop-catalog'
+  const [view, setView] = useState('landing'); // 'landing' | 'login' | 'register' | 'vendor-profile' | 'vendor-listing' | 'admin-approval' | 'admin-product' | 'admin-vendor' | 'admin-reporting' | 'shop-catalog'
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
 
@@ -31,10 +32,14 @@ export default function App() {
     setUser(userData);
     setToken(userToken);
 
-    if (userData?.role === 'vendor') {
+    const normalizedRole = userData?.role?.toLowerCase();
+
+    if (normalizedRole === 'vendor') {
       setView('vendor-listing');
-    } else {
+    } else if (normalizedRole === 'admin') {
       setView('admin-product');
+    } else {
+      setView('landing');
     }
   };
 
@@ -63,11 +68,16 @@ export default function App() {
           <RegisterPage onRegisterSuccess={handleLoginSuccess} onViewChange={setView} />
         )}
 
-        {view === 'vendor-profile' && <VendorShopProfilePage />}
-        {view === 'vendor-listing' && <VendorProductListingPage />}
-        {view === 'admin-approval' && <AdminApprovalPage />}
-        {view === 'admin-product' && <AdminProductManagementPage />}
-        {view === 'admin-vendor' && <AdminVendorManagementPage />}
+        {view === 'vendor-profile' && (
+          <VendorShopProfilePage user={user} onViewChange={setView} />
+        )}
+        {view === 'vendor-listing' && (
+          <VendorProductListingPage user={user} onViewChange={setView} />
+        )}
+        {view === 'admin-approval' && <AdminApprovalPage onViewChange={setView} />}
+        {view === 'admin-product' && <AdminProductManagementPage onViewChange={setView} />}
+        {view === 'admin-vendor' && <AdminVendorManagementPage onViewChange={setView} />}
+        {view === 'admin-reporting' && <AdminReportingPage onViewChange={setView} />}
         {view === 'shop-catalog' && <ShopCatalogPage />}
       </main>
 
