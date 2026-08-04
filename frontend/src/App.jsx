@@ -8,9 +8,12 @@ import RegisterPage from './pages/RegisterPage';
 import VendorShopProfilePage from './pages/VendorShopProfilePage';
 import VendorProductListingPage from './pages/VendorProductListingPage';
 import AdminApprovalPage from './pages/AdminApprovalPage';
+import AdminProductManagementPage from './pages/AdminProductManagementPage';
+import AdminVendorManagementPage from './pages/AdminVendorManagementPage';
+import ShopCatalogPage from './pages/ShopCatalogPage';
 
 export default function App() {
-  const [view, setView] = useState('landing'); // 'landing' | 'login' | 'register' | 'vendor-profile' | 'vendor-listing' | 'admin-approval'
+  const [view, setView] = useState('landing'); // 'landing' | 'login' | 'register' | 'vendor-profile' | 'vendor-listing' | 'admin-approval' | 'admin-product' | 'admin-vendor' | 'shop-catalog'
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
 
@@ -31,7 +34,7 @@ export default function App() {
     if (userData?.role === 'vendor') {
       setView('vendor-listing');
     } else {
-      setView('admin-approval');
+      setView('admin-product');
     }
   };
 
@@ -63,6 +66,9 @@ export default function App() {
         {view === 'vendor-profile' && <VendorShopProfilePage />}
         {view === 'vendor-listing' && <VendorProductListingPage />}
         {view === 'admin-approval' && <AdminApprovalPage />}
+        {view === 'admin-product' && <AdminProductManagementPage />}
+        {view === 'admin-vendor' && <AdminVendorManagementPage />}
+        {view === 'shop-catalog' && <ShopCatalogPage />}
       </main>
 
       {/* Floating AI Chat Assistant */}
