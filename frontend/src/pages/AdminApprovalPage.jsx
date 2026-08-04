@@ -46,8 +46,9 @@ const badgeClassMap = {
   Suspended: 'status-badge suspended',
 };
 
-export default function AdminApprovalPage() {
+export default function AdminApprovalPage({ onViewChange }) {
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeItem, setActiveItem] = useState('Approvals');
   const [requests, setRequests] = useState(shopRequests);
 
   const filteredRequests = useMemo(() => {
@@ -68,6 +69,10 @@ export default function AdminApprovalPage() {
     );
   };
 
+  const restoreApproval = (shop) => {
+    updateStatus(shop, 'Approved');
+  };
+
   return (
     <div className="admin-approval-shell">
       <aside className="admin-approval-sidebar">
@@ -86,7 +91,14 @@ export default function AdminApprovalPage() {
             <button
               key={item.label}
               type="button"
-              className={`admin-approval-nav-item ${item.active ? 'active' : ''}`}
+              className={`admin-approval-nav-item ${activeItem === item.label ? 'active' : ''}`}
+              onClick={() => {
+                setActiveItem(item.label);
+                if (item.label === 'Products') onViewChange?.('admin-product');
+                if (item.label === 'Approvals') onViewChange?.('admin-approval');
+                if (item.label === 'Vendors') onViewChange?.('admin-vendor');
+                if (item.label === 'Overview' || item.label === 'Settings') onViewChange?.('admin-reporting');
+              }}
             >
               <span className="admin-approval-nav-icon">{item.icon}</span>
               <span>{item.label}</span>
@@ -159,6 +171,9 @@ export default function AdminApprovalPage() {
                 </button>
                 <button type="button" className="admin-approval-action-btn suspend" onClick={() => updateStatus(item.shop, 'Suspended')}>
                   Suspend
+                </button>
+                <button type="button" className="admin-approval-action-btn restore" onClick={() => restoreApproval(item.shop)}>
+                  Restore
                 </button>
               </div>
             </div>
