@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const asyncHandler = require('../utils/asyncHandler');
 
 const createToken = (user) => {
   if (!process.env.JWT_SECRET) {
@@ -18,7 +19,7 @@ const authResponse = (user) => ({
   user: user.toJSON(),
 });
 
-const registerVendor = async (req, res) => {
+const registerVendor = asyncHandler(async (req, res) => {
   const { name, email, phone, password } = req.body;
 
   if (!name || !email || !phone || !password) {
@@ -51,9 +52,9 @@ const registerVendor = async (req, res) => {
 
     throw error;
   }
-};
+});
 
-const login = async (req, res) => {
+const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
@@ -72,10 +73,10 @@ const login = async (req, res) => {
   }
 
   return res.status(200).json(authResponse(user));
-};
+});
 
-const getMe = async (req, res) => {
+const getMe = asyncHandler(async (req, res) => {
   return res.status(200).json({ user: req.user.toJSON() });
-};
+});
 
 module.exports = { getMe, login, registerVendor };

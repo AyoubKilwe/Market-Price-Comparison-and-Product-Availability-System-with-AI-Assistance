@@ -36,8 +36,7 @@ const userSchema = new mongoose.Schema(
       enum: ['Active', 'Suspended'],
       default: 'Active',
     },
-  },
-  { timestamps: true }
+  }
 );
 
 userSchema.pre('save', async function hashPassword() {
