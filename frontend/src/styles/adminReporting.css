@@ -1,0 +1,234 @@
+.admin-reporting-shell {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  min-height: calc(100vh - 80px);
+  background: #eef4fb;
+}
+
+.admin-reporting-sidebar {
+  background: #eef4fb;
+  border-right: 1px solid #d8e1ef;
+  padding: 20px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.admin-reporting-brand {
+  font-size: 1.9rem;
+  font-weight: 800;
+  color: #111827;
+}
+
+.admin-reporting-user-card {
+  background: #dbeafe;
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-reporting-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #0f172a, #334155);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+}
+
+.admin-reporting-user-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.admin-reporting-user-role {
+  color: #4b5563;
+  font-size: 0.82rem;
+}
+
+.admin-reporting-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.admin-reporting-nav-item {
+  border: none;
+  background: transparent;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 10px;
+  color: #334155;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.admin-reporting-nav-item.active {
+  background: #7be4d7;
+  color: #0f172a;
+}
+
+.admin-reporting-nav-icon {
+  width: 18px;
+  text-align: center;
+}
+
+.admin-reporting-add-btn {
+  margin-top: auto;
+  border: none;
+  border-radius: 10px;
+  padding: 14px 16px;
+  background: #111827;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.admin-reporting-content {
+  padding: 24px 28px 40px;
+}
+
+.admin-reporting-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+
+.admin-reporting-header-row h1 {
+  margin: 0;
+  font-size: 2.05rem;
+  color: #111827;
+}
+
+.admin-reporting-header-row p {
+  margin: 8px 0 0;
+  color: #475569;
+}
+
+.admin-reporting-searchbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 10px 12px;
+  min-width: 280px;
+}
+
+.admin-reporting-searchbox input {
+  border: none;
+  outline: none;
+  width: 100%;
+  background: transparent;
+  font-size: 0.95rem;
+}
+
+.admin-reporting-summary-grid {
+  margin-top: 24px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.admin-reporting-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 8px 28px rgba(15, 23, 42, 0.06);
+}
+
+.admin-reporting-card.blue { background: linear-gradient(180deg, #eff6ff, #f8fbff); }
+.admin-reporting-card.green { background: linear-gradient(180deg, #effcf6, #f8fffb); }
+.admin-reporting-card.amber { background: linear-gradient(180deg, #fff7ed, #fffbf5); }
+.admin-reporting-card.teal { background: linear-gradient(180deg, #ecfeff, #f7ffff); }
+
+.admin-reporting-card-title {
+  color: #475569;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.admin-reporting-card-value {
+  margin-top: 8px;
+  color: #0f172a;
+  font-size: 2rem;
+  font-weight: 800;
+}
+
+.admin-reporting-table-card {
+  margin-top: 22px;
+  background: #fff;
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 8px 28px rgba(15, 23, 42, 0.06);
+}
+
+.admin-reporting-table-head,
+.admin-reporting-row {
+  display: grid;
+  grid-template-columns: 1.3fr 0.8fr 0.7fr 0.6fr;
+  gap: 14px;
+  align-items: center;
+}
+
+.admin-reporting-table-head {
+  padding: 12px 10px;
+  background: #e5edf7;
+  border-radius: 8px;
+  color: #64748b;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  font-weight: 800;
+}
+
+.admin-reporting-row {
+  padding: 14px 10px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.admin-reporting-name-cell {
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.admin-reporting-change {
+  color: #047857;
+  font-weight: 800;
+}
+
+@media (max-width: 1100px) {
+  .admin-reporting-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-reporting-sidebar {
+    border-right: none;
+    border-bottom: 1px solid #d8e1ef;
+  }
+
+  .admin-reporting-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 750px) {
+  .admin-reporting-header-row,
+  .admin-reporting-summary-grid,
+  .admin-reporting-table-head,
+  .admin-reporting-row {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-reporting-header-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
