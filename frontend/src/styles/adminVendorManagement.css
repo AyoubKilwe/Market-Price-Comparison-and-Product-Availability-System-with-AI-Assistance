@@ -1,0 +1,249 @@
+.admin-vendor-shell {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  min-height: calc(100vh - 80px);
+  background: #eef4fb;
+}
+
+.admin-vendor-sidebar {
+  background: #eef4fb;
+  border-right: 1px solid #d8e1ef;
+  padding: 20px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.admin-vendor-brand {
+  font-size: 1.9rem;
+  font-weight: 800;
+  color: #111827;
+}
+
+.admin-vendor-user-card {
+  background: #dbeafe;
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-vendor-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1f2937, #475569);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+}
+
+.admin-vendor-user-name {
+  font-weight: 700;
+  font-size: 0.94rem;
+}
+
+.admin-vendor-user-role {
+  color: #4b5563;
+  font-size: 0.82rem;
+}
+
+.admin-vendor-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.admin-vendor-nav-item {
+  border: none;
+  background: transparent;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 10px;
+  color: #334155;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.admin-vendor-nav-item.active {
+  background: #7be4d7;
+  color: #0f172a;
+}
+
+.admin-vendor-nav-icon {
+  width: 18px;
+  text-align: center;
+}
+
+.admin-vendor-add-btn {
+  margin-top: auto;
+  border: none;
+  border-radius: 10px;
+  padding: 14px 16px;
+  background: #111827;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.admin-vendor-content {
+  padding: 24px 28px 40px;
+}
+
+.admin-vendor-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.admin-vendor-header-row h1 {
+  font-size: 2rem;
+  margin: 0;
+}
+
+.admin-vendor-header-row p {
+  margin: 8px 0 0;
+  color: #475569;
+}
+
+.admin-vendor-searchbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  padding: 10px 12px;
+  border-radius: 10px;
+  min-width: 280px;
+}
+
+.admin-vendor-searchbox input {
+  border: none;
+  outline: none;
+  width: 100%;
+  background: transparent;
+  font-family: inherit;
+  font-size: 0.95rem;
+}
+
+.admin-vendor-card {
+  margin-top: 24px;
+  background: #ffffff;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 6px 28px rgba(15, 23, 42, 0.06);
+}
+
+.admin-vendor-table-head,
+.admin-vendor-row {
+  display: grid;
+  grid-template-columns: 1.2fr 1.1fr 0.9fr 0.7fr 1.2fr;
+  gap: 14px;
+  align-items: center;
+}
+
+.admin-vendor-table-head {
+  background: #e5edf7;
+  padding: 14px 16px;
+  color: #64748b;
+  font-size: 0.77rem;
+  text-transform: uppercase;
+  font-weight: 800;
+}
+
+.admin-vendor-row {
+  padding: 16px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.admin-vendor-main-text {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.admin-vendor-secondary-text {
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.vendor-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.vendor-status.active {
+  background: #d1fae5;
+  color: #047857;
+}
+
+.vendor-status.pending {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.vendor-status.suspended {
+  background: #e0e7ff;
+  color: #4338ca;
+}
+
+.admin-vendor-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.admin-vendor-action-btn {
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.admin-vendor-action-btn.activate {
+  background: #d1fae5;
+  color: #047857;
+}
+
+.admin-vendor-action-btn.pending {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.admin-vendor-action-btn.suspend {
+  background: #e0e7ff;
+  color: #4338ca;
+}
+
+@media (max-width: 1200px) {
+  .admin-vendor-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-vendor-sidebar {
+    border-right: none;
+    border-bottom: 1px solid #d8e1ef;
+  }
+}
+
+@media (max-width: 1000px) {
+  .admin-vendor-header-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-vendor-table-head,
+  .admin-vendor-row {
+    grid-template-columns: 1fr;
+  }
+}
