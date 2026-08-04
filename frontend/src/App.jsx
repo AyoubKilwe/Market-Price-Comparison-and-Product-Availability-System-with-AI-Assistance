@@ -7,9 +7,10 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import VendorShopProfilePage from './pages/VendorShopProfilePage';
 import VendorProductListingPage from './pages/VendorProductListingPage';
+import AdminApprovalPage from './pages/AdminApprovalPage';
 
 export default function App() {
-  const [view, setView] = useState('landing'); // 'landing' | 'login' | 'register' | 'vendor-profile' | 'vendor-listing'
+  const [view, setView] = useState('landing'); // 'landing' | 'login' | 'register' | 'vendor-profile' | 'vendor-listing' | 'admin-approval'
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
 
@@ -30,7 +31,7 @@ export default function App() {
     if (userData?.role === 'vendor') {
       setView('vendor-listing');
     } else {
-      setView('landing');
+      setView('admin-approval');
     }
   };
 
@@ -61,6 +62,7 @@ export default function App() {
 
         {view === 'vendor-profile' && <VendorShopProfilePage />}
         {view === 'vendor-listing' && <VendorProductListingPage />}
+        {view === 'admin-approval' && <AdminApprovalPage />}
       </main>
 
       {/* Floating AI Chat Assistant */}
