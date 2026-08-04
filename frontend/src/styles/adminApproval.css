@@ -1,0 +1,270 @@
+.admin-approval-shell {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  min-height: calc(100vh - 80px);
+  background: #eef4fb;
+}
+
+.admin-approval-sidebar {
+  background: #eef4fb;
+  border-right: 1px solid #d8e1ef;
+  padding: 20px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.admin-approval-brand {
+  font-size: 1.9rem;
+  font-weight: 800;
+  color: #111827;
+}
+
+.admin-approval-user-card {
+  background: #dbeafe;
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-approval-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1f2937, #475569);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+}
+
+.admin-approval-user-name {
+  font-weight: 700;
+  font-size: 0.94rem;
+}
+
+.admin-approval-user-role {
+  color: #4b5563;
+  font-size: 0.82rem;
+}
+
+.admin-approval-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.admin-approval-nav-item {
+  border: none;
+  background: transparent;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 10px;
+  color: #334155;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.admin-approval-nav-item.active {
+  background: #7be4d7;
+  color: #0f172a;
+}
+
+.admin-approval-nav-icon {
+  width: 18px;
+  text-align: center;
+}
+
+.admin-approval-add-btn {
+  margin-top: auto;
+  border: none;
+  border-radius: 10px;
+  padding: 14px 16px;
+  background: #111827;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.admin-approval-content {
+  padding: 24px 28px 40px;
+}
+
+.admin-approval-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.admin-approval-header-row h1 {
+  font-size: 2rem;
+  margin: 0;
+}
+
+.admin-approval-header-row p {
+  margin: 8px 0 0;
+  color: #475569;
+}
+
+.admin-approval-searchbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  padding: 10px 12px;
+  border-radius: 10px;
+  min-width: 280px;
+}
+
+.admin-approval-searchbox input {
+  border: none;
+  outline: none;
+  width: 100%;
+  background: transparent;
+  font-family: inherit;
+  font-size: 0.95rem;
+}
+
+.admin-approval-card {
+  margin-top: 24px;
+  background: #ffffff;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 6px 28px rgba(15, 23, 42, 0.06);
+}
+
+.admin-approval-table-head,
+.admin-approval-row {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr 0.8fr 1.3fr;
+  gap: 14px;
+  align-items: center;
+}
+
+.admin-approval-table-head {
+  padding: 14px 16px;
+  background: #e5edf7;
+  color: #64748b;
+  font-size: 0.77rem;
+  text-transform: uppercase;
+  font-weight: 800;
+}
+
+.admin-approval-row {
+  padding: 16px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.admin-approval-shop-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-approval-shop-badge {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  background: #d1fae5;
+}
+
+.admin-approval-shop-name,
+.admin-approval-main-text {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.admin-approval-secondary-text {
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.status-badge.pending {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.status-badge.approved {
+  background: #d1fae5;
+  color: #047857;
+}
+
+.status-badge.rejected {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.status-badge.suspended {
+  background: #e0e7ff;
+  color: #4338ca;
+}
+
+.admin-approval-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.admin-approval-action-btn {
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.admin-approval-action-btn.approve {
+  background: #d1fae5;
+  color: #047857;
+}
+
+.admin-approval-action-btn.reject {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.admin-approval-action-btn.suspend {
+  background: #e0e7ff;
+  color: #4338ca;
+}
+
+@media (max-width: 1200px) {
+  .admin-approval-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-approval-sidebar {
+    border-right: none;
+    border-bottom: 1px solid #d8e1ef;
+  }
+}
+
+@media (max-width: 1000px) {
+  .admin-approval-header-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-approval-table-head,
+  .admin-approval-row {
+    grid-template-columns: 1fr;
+  }
+}
