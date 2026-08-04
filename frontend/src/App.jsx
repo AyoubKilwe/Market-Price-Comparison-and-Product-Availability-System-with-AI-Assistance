@@ -6,9 +6,10 @@ import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import VendorShopProfilePage from './pages/VendorShopProfilePage';
+import VendorProductListingPage from './pages/VendorProductListingPage';
 
 export default function App() {
-  const [view, setView] = useState('landing'); // 'landing' | 'login' | 'register' | 'vendor-profile'
+  const [view, setView] = useState('landing'); // 'landing' | 'login' | 'register' | 'vendor-profile' | 'vendor-listing'
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
 
@@ -27,7 +28,7 @@ export default function App() {
     setToken(userToken);
 
     if (userData?.role === 'vendor') {
-      setView('vendor-profile');
+      setView('vendor-listing');
     } else {
       setView('landing');
     }
@@ -59,6 +60,7 @@ export default function App() {
         )}
 
         {view === 'vendor-profile' && <VendorShopProfilePage />}
+        {view === 'vendor-listing' && <VendorProductListingPage />}
       </main>
 
       {/* Floating AI Chat Assistant */}
