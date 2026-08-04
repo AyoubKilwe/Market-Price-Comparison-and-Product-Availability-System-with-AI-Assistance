@@ -6,6 +6,7 @@ import './styles/vendorProductListing.css'
 import './styles/adminApproval.css'
 import './styles/adminProductManagement.css'
 import './styles/adminVendorManagement.css'
+import './styles/adminReporting.css'
 import './styles/shopCatalog.css'
 import App from './App.jsx'
 
