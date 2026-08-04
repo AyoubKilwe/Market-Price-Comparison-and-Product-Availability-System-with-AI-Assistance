@@ -38,8 +38,9 @@ const statusClassName = {
   Suspended: 'vendor-status suspended',
 };
 
-export default function AdminVendorManagementPage() {
+export default function AdminVendorManagementPage({ onViewChange }) {
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeItem, setActiveItem] = useState('Vendors');
   const [rows, setRows] = useState(vendorRows);
 
   const filteredRows = useMemo(() => {
@@ -75,7 +76,14 @@ export default function AdminVendorManagementPage() {
             <button
               key={item.label}
               type="button"
-              className={`admin-vendor-nav-item ${item.active ? 'active' : ''}`}
+              className={`admin-vendor-nav-item ${activeItem === item.label ? 'active' : ''}`}
+              onClick={() => {
+                setActiveItem(item.label);
+                if (item.label === 'Products') onViewChange?.('admin-product');
+                if (item.label === 'Approvals') onViewChange?.('admin-approval');
+                if (item.label === 'Vendors') onViewChange?.('admin-vendor');
+                if (item.label === 'Overview' || item.label === 'Settings') onViewChange?.('admin-reporting');
+              }}
             >
               <span className="admin-vendor-nav-icon">{item.icon}</span>
               <span>{item.label}</span>
