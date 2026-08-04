@@ -3,6 +3,12 @@ require('dotenv').config();
 const cors = require('cors');
 const express = require('express');
 const { connectDB, disconnectDB } = require('./config/db');
+const { errorHandler, notFound } = require('./middleware/errorMiddleware');
+const aiRoutes = require('./routes/aiRoutes');
+const authRoutes = require('./routes/authRoutes');
+const { adminRouter: adminListingRoutes, router: listingRoutes } = require('./routes/listingRoutes');
+const productRoutes = require('./routes/productRoutes');
+const { adminRouter: adminShopRoutes, router: shopRoutes } = require('./routes/shopRoutes');
 
 const app = express();
 
@@ -19,15 +25,19 @@ const getCorsOptions = () => {
   };
 };
 
-app.use((req, res, next) => cors(getCorsOptions())(req, res, next));
+app.use(cors(getCorsOptions()));
 app.use(express.json({ limit: '1mb' }));
 
-app.get('/api/health', (req, res) => {
-  res.status(200).json({
-    status: 'ok',
-    message: 'MarketEye API is running',
-  });
-});
+app.use('/api/auth', authRoutes);
+app.use('/api/products', productRoutes);
+app.use('/api/shops', shopRoutes);
+app.use('/api/listings', listingRoutes);
+app.use('/api/ai', aiRoutes);
+app.use('/api/admin', adminShopRoutes);
+app.use('/api/admin', adminListingRoutes);
+
+app.use(notFound);
+app.use(errorHandler);
 
 let server;
 let isShuttingDown = false;
