@@ -16,7 +16,7 @@ const idRule = param('id').isMongoId().withMessage('A valid product ID is requir
 const productRules = [
   body('name').trim().notEmpty().withMessage('Product name is required'),
   body('category').trim().notEmpty().withMessage('Category is required'),
-  body('unit').trim().notEmpty().withMessage('Unit is required'),
+  body('unit').optional().trim().isLength({ max: 50 }).withMessage('Unit is too long'),
   body('image').optional().isString().withMessage('Image must be a string'),
   body('status').optional().isIn(['Active', 'Inactive']).withMessage('Invalid product status'),
 ];

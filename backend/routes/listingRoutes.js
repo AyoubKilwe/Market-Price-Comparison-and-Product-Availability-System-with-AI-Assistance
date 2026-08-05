@@ -5,6 +5,7 @@ const {
   createListing,
   deleteListing,
   getAllListings,
+  getFeaturedListings,
   getMyListings,
   getShopListings,
   updateListing,
@@ -19,6 +20,8 @@ const stockRule = body('stockStatus')
   .isIn(['In Stock', 'Low Stock', 'Out of Stock'])
   .withMessage('Invalid stock status');
 
+router.get('/featured', getFeaturedListings);
+
 router.post(
   '/',
   protect,
@@ -26,6 +29,7 @@ router.post(
   [
     body('product').isMongoId().withMessage('A valid product ID is required'),
     body('price').isFloat({ gt: 0 }).withMessage('Price must be greater than zero').toFloat(),
+    body('unit').trim().notEmpty().isLength({ max: 50 }).withMessage('A valid selling unit is required'),
     stockRule,
     body('isActive').optional().isBoolean().toBoolean(),
   ],
@@ -40,6 +44,7 @@ router.put(
   [
     param('id').isMongoId().withMessage('A valid listing ID is required'),
     body('price').isFloat({ gt: 0 }).withMessage('Price must be greater than zero').toFloat(),
+    body('unit').trim().notEmpty().isLength({ max: 50 }).withMessage('A valid selling unit is required'),
     stockRule,
     body('isActive').optional().isBoolean().toBoolean(),
   ],

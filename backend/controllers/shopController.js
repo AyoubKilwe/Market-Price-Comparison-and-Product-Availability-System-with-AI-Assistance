@@ -38,7 +38,12 @@ const getMyShop = asyncHandler(async (req, res) => {
 const updateMyShop = asyncHandler(async (req, res) => {
   const shop = await Shop.findOneAndUpdate(
     { vendor: req.user._id },
-    { shopName: req.body.shopName, phone: req.body.phone, address: req.body.address },
+    {
+      shopName: req.body.shopName,
+      phone: req.body.phone,
+      address: req.body.address,
+      image: req.body.image || '',
+    },
     { new: true, runValidators: true }
   );
   if (!shop) return res.status(404).json({ message: 'Shop profile not found' });

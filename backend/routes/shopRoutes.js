@@ -20,6 +20,12 @@ const shopRules = [
   body('shopName').trim().notEmpty().withMessage('Shop name is required'),
   body('phone').trim().notEmpty().withMessage('Shop phone is required'),
   body('address').trim().notEmpty().withMessage('Shop address is required'),
+  body('image')
+    .optional({ values: 'falsy' })
+    .isString()
+    .withMessage('Shop banner must be an image string')
+    .isLength({ max: 3000000 })
+    .withMessage('Shop banner is too large'),
 ];
 
 router.post('/', protect, authorize('Vendor'), shopRules, validate, createShop);

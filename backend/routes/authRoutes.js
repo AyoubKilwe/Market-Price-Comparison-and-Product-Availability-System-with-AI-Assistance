@@ -1,6 +1,13 @@
 const express = require('express');
 const { body, param } = require('express-validator');
-const { getAllVendors, getMe, login, registerVendor, updateVendorStatus } = require('../controllers/authController');
+const {
+  changePassword,
+  getAllVendors,
+  getMe,
+  login,
+  registerVendor,
+  updateVendorStatus,
+} = require('../controllers/authController');
 const protect = require('../middleware/authMiddleware');
 const authorize = require('../middleware/roleMiddleware');
 const validate = require('../middleware/validateMiddleware');
@@ -29,6 +36,17 @@ router.post(
   login
 );
 router.get('/me', protect, getMe);
+router.patch(
+  '/change-password',
+  protect,
+  authorize('Vendor'),
+  [
+    body('currentPassword').notEmpty().withMessage('Current password is required'),
+    body('newPassword').isLength({ min: 8 }).withMessage('New password must be at least 8 characters'),
+  ],
+  validate,
+  changePassword
+);
 
 adminRouter.get('/vendors', protect, authorize('Admin'), getAllVendors);
 adminRouter.patch(

@@ -1,19 +1,24 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import AiAssistant from './components/AiAssistant';
-import LandingPage from './pages/LandingPage';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
-import VendorShopProfilePage from './pages/VendorShopProfilePage';
-import VendorProductListingPage from './pages/VendorProductListingPage';
-import AdminApprovalPage from './pages/AdminApprovalPage';
-import AdminProductManagementPage from './pages/AdminProductManagementPage';
-import AdminVendorManagementPage from './pages/AdminVendorManagementPage';
-import AdminShopManagementPage from './pages/AdminShopManagementPage';
-import AdminListingsOverviewPage from './pages/AdminListingsOverviewPage';
-import AdminReportingPage from './pages/AdminReportingPage';
-import ShopCatalogPage from './pages/ShopCatalogPage';
+// Customer / Public Pages
+import LandingPage from './pages/customer/LandingPage';
+import LoginPage from './pages/customer/LoginPage';
+import RegisterPage from './pages/customer/RegisterPage';
+import ShopCatalogPage from './pages/customer/ShopCatalogPage';
+
+// Vendor Pages
+import VendorShopProfilePage from './pages/vendor/VendorShopProfilePage';
+import VendorProductListingPage from './pages/vendor/VendorProductListingPage';
+import VendorPasswordPage from './pages/vendor/VendorPasswordPage';
+
+// Admin Pages
+import AdminApprovalPage from './pages/admin/AdminApprovalPage';
+import AdminProductManagementPage from './pages/admin/AdminProductManagementPage';
+import AdminShopManagementPage from './pages/admin/AdminShopManagementPage';
+import AdminListingsOverviewPage from './pages/admin/AdminListingsOverviewPage';
+import AdminReportingPage from './pages/admin/AdminReportingPage';
 
 export default function App() {
   const [view, setView] = useState('landing');
@@ -60,10 +65,27 @@ export default function App() {
     setView('landing');
   };
 
+  const handleLandingSection = (sectionId) => {
+    setView('landing');
+    window.setTimeout(() => {
+      document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 0);
+  };
+
+  // Admin and vendor pages have their own sidebar — hide global navbar/footer
+  const isDashboardView = view.startsWith('admin-') || view.startsWith('vendor-');
+
   return (
     <div className="app-container">
-      {/* Header / Navbar */}
-      <Navbar user={user} onSignOut={handleSignOut} onViewChange={setView} />
+      {/* Header / Navbar — hidden on dashboard views */}
+      {!isDashboardView && (
+        <Navbar
+          user={user}
+          onSignOut={handleSignOut}
+          onViewChange={setView}
+          onLandingSection={handleLandingSection}
+        />
+      )}
 
       {/* Pages Container */}
       <main style={{ flexGrow: 1 }}>
@@ -78,27 +100,32 @@ export default function App() {
         )}
 
         {view === 'vendor-profile' && (
-          <VendorShopProfilePage user={user} onViewChange={setView} />
+          <VendorShopProfilePage user={user} onViewChange={setView} onSignOut={handleSignOut} />
         )}
 
         {view === 'vendor-listing' && (
-          <VendorProductListingPage user={user} onViewChange={setView} />
+          <VendorProductListingPage user={user} onViewChange={setView} onSignOut={handleSignOut} />
         )}
 
-        {view === 'admin-approval' && <AdminApprovalPage onViewChange={setView} />}
-        {view === 'admin-product' && <AdminProductManagementPage onViewChange={setView} />}
-        {view === 'admin-vendor' && <AdminVendorManagementPage onViewChange={setView} />}
-        {view === 'admin-shop' && <AdminShopManagementPage onViewChange={setView} />}
-        {view === 'admin-listings' && <AdminListingsOverviewPage onViewChange={setView} />}
-        {view === 'admin-reporting' && <AdminReportingPage onViewChange={setView} />}
+        {view === 'vendor-settings' && (
+          <VendorPasswordPage user={user} onViewChange={setView} onSignOut={handleSignOut} />
+        )}
+
+        {view === 'admin-approval' && <AdminApprovalPage onViewChange={setView} onSignOut={handleSignOut} />}
+        {view === 'admin-product' && <AdminProductManagementPage onViewChange={setView} onSignOut={handleSignOut} />}
+        {view === 'admin-shop' && <AdminShopManagementPage onViewChange={setView} onSignOut={handleSignOut} />}
+        {view === 'admin-listings' && <AdminListingsOverviewPage onViewChange={setView} onSignOut={handleSignOut} />}
+        {view === 'admin-reporting' && <AdminReportingPage onViewChange={setView} onSignOut={handleSignOut} />}
         {view === 'shop-catalog' && <ShopCatalogPage />}
       </main>
 
-      {/* Floating AI Chat Assistant */}
-      <AiAssistant />
+      {/* AI assistant is available only on customer/public pages. */}
+      {!isDashboardView && <AiAssistant />}
 
-      {/* Footer */}
-      <Footer onViewChange={setView} />
+      {/* Footer — hidden on dashboard views */}
+      {!isDashboardView && (
+        <Footer onViewChange={setView} onLandingSection={handleLandingSection} />
+      )}
     </div>
   );
 }

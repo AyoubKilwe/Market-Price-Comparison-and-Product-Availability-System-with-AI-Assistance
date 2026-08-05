@@ -1,9 +1,4 @@
-import React from 'react';
-
-export default function Navbar({ user, onSignOut, onViewChange }) {
-  const isVendor = user?.role?.toLowerCase() === 'vendor';
-  const isAdmin = user?.role?.toLowerCase() === 'admin';
-
+export default function Navbar({ user, onSignOut, onViewChange, onLandingSection }) {
   return (
     <header className="navbar">
       <div className="nav-brand" onClick={() => onViewChange('landing')}>
@@ -27,32 +22,31 @@ export default function Navbar({ user, onSignOut, onViewChange }) {
       </div>
 
       <nav className="nav-links">
-        <span className="nav-link" onClick={() => onViewChange('landing')}>Comparison</span>
-        <span className="nav-link" onClick={() => onViewChange('shop-catalog')}>Shops</span>
-        {isVendor && (
-          <span className="nav-link" onClick={() => onViewChange('vendor-profile')}>
-            Vendor Dashboard
-          </span>
-        )}
-        {isAdmin && (
-          <span className="nav-link" onClick={() => onViewChange('admin-product')}>
-            Admin Dashboard
-          </span>
-        )}
+        <button type="button" className="nav-link" onClick={() => onLandingSection('comparison-search')}>Comparison</button>
+        <button type="button" className="nav-link" onClick={() => onViewChange('shop-catalog')}>Shops</button>
+        <button type="button" className="nav-link" onClick={() => onLandingSection('all-deals')}>Deals</button>
       </nav>
 
       <div className="nav-actions">
         {user ? (
           <>
-            <span
-              style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-secondary)', cursor: 'pointer' }}
-              onClick={() => {
-                if (isVendor) onViewChange('vendor-profile');
-                if (isAdmin) onViewChange('admin-product');
-              }}
-            >
-              {user.name} ({user.role})
-            </span>
+            {user.role?.toLowerCase() === 'admin' ? (
+              <button
+                type="button"
+                className="btn btn-outline"
+                onClick={() => onViewChange('admin-product')}
+              >
+                Admin Dashboard
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="btn btn-outline"
+                onClick={() => onViewChange('vendor-profile')}
+              >
+                Vendor Dashboard
+              </button>
+            )}
             <button className="btn btn-outline" onClick={onSignOut}>
               Sign Out
             </button>

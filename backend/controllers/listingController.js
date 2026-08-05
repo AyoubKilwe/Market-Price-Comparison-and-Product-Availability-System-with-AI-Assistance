@@ -28,6 +28,7 @@ const createListing = asyncHandler(async (req, res) => {
     shop: shop._id,
     product: product._id,
     price: req.body.price,
+    unit: req.body.unit,
     stockStatus: req.body.stockStatus,
     isActive: req.body.isActive ?? true,
   });
@@ -54,6 +55,7 @@ const updateListing = asyncHandler(async (req, res) => {
     { _id: req.params.id, shop: shop._id },
     {
       price: req.body.price,
+      unit: req.body.unit,
       stockStatus: req.body.stockStatus,
       isActive: req.body.isActive,
     },
@@ -98,6 +100,40 @@ const compareProduct = asyncHandler(async (req, res) => {
   return res.status(200).json(comparison);
 });
 
+// Public landing-page deals: one cheapest active listing per active product,
+// restricted to shops that have been approved by an administrator.
+const getFeaturedListings = asyncHandler(async (req, res) => {
+  const approvedShopIds = await Shop.find({ status: 'Approved' }).distinct('_id');
+  const listings = await Listing.find({
+    shop: { $in: approvedShopIds },
+    isActive: true,
+  })
+    .populate({ path: 'product', match: { status: 'Active' } })
+    .populate('shop', 'shopName phone address')
+    .sort({ price: 1, updatedAt: -1 });
+
+  const dealsByProduct = new Map();
+
+  listings.forEach((listing) => {
+    if (!listing.product) return;
+    const productId = listing.product._id.toString();
+    const existing = dealsByProduct.get(productId);
+
+    if (existing) {
+      existing.shopCount += 1;
+      return;
+    }
+
+    dealsByProduct.set(productId, {
+      product: listing.product,
+      listing,
+      shopCount: 1,
+    });
+  });
+
+  return res.status(200).json({ deals: Array.from(dealsByProduct.values()) });
+});
+
 const getShopListings = asyncHandler(async (req, res) => {
   const shop = await Shop.findOne({ _id: req.params.shopId, status: 'Approved' });
   if (!shop) return res.status(404).json({ message: 'Approved shop not found' });
@@ -111,7 +147,7 @@ const getShopListings = asyncHandler(async (req, res) => {
 const getAllListings = asyncHandler(async (req, res) => {
   const listings = await Listing.find()
     .populate('shop', 'shopName status')
-    .populate('product', 'name category unit status')
+    .populate('product', 'name category status')
     .sort({ updatedAt: -1 });
   return res.status(200).json({ listings });
 });
@@ -123,6 +159,7 @@ module.exports = {
   deleteListing,
   getAllListings,
   getComparisonData,
+  getFeaturedListings,
   getMyListings,
   getShopListings,
   updateListing,
