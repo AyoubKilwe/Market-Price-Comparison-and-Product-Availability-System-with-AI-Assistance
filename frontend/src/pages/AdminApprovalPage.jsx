@@ -1,41 +1,14 @@
-import React, { useMemo, useState } from 'react';
-
-const shopRequests = [
-  {
-    shop: 'FreshMart Retail',
-    vendor: 'Amina Hassan',
-    email: 'amina@freshmart.com',
-    phone: '252-63-123456',
-    status: 'Pending',
-  },
-  {
-    shop: 'CityGrocer Hub',
-    vendor: 'Yusuf Ali',
-    email: 'yusuf@citygrocer.com',
-    phone: '252-63-987654',
-    status: 'Approved',
-  },
-  {
-    shop: 'SomMart Plus',
-    vendor: 'Leyla Noor',
-    email: 'leyla@sommart.com',
-    phone: '252-63-456789',
-    status: 'Rejected',
-  },
-  {
-    shop: 'Nile Essentials',
-    vendor: 'Mohamed Jama',
-    email: 'mohamed@nile.co',
-    phone: '252-63-654321',
-    status: 'Suspended',
-  },
-];
+import React, { useEffect, useMemo, useState } from 'react';
+import { api } from '../services/api';
 
 const navItems = [
   { label: 'Overview', icon: '▦' },
   { label: 'Products', icon: '▣' },
   { label: 'Approvals', icon: '✓', active: true },
   { label: 'Vendors', icon: '◫' },
+  { label: 'Shops', icon: '🏪' },
+  { label: 'Listings', icon: '🧾' },
+  { label: 'Reporting', icon: '📊' },
   { label: 'Settings', icon: '⚙' },
 ];
 
@@ -49,28 +22,61 @@ const badgeClassMap = {
 export default function AdminApprovalPage({ onViewChange }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeItem, setActiveItem] = useState('Approvals');
-  const [requests, setRequests] = useState(shopRequests);
+  const [requests, setRequests] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [notice, setNotice] = useState('');
+
+  // Fetch registered shops from MongoDB
+  const fetchShops = async () => {
+    setIsLoading(true);
+    try {
+      const data = await api.get('/api/admin/shops');
+      setRequests(data.shops || []);
+    } catch (error) {
+      setNotice(error.message || 'Failed to fetch shop registration requests.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchShops();
+  }, []);
 
   const filteredRequests = useMemo(() => {
     const query = searchTerm.trim().toLowerCase();
     if (!query) return requests;
 
     return requests.filter((entry) => {
-      return [entry.shop, entry.vendor, entry.email, entry.phone, entry.status]
+      const vName = entry.vendor?.name || '';
+      const vEmail = entry.vendor?.email || '';
+      return [entry.shopName, vName, vEmail, entry.phone, entry.status]
         .join(' ')
         .toLowerCase()
         .includes(query);
     });
   }, [requests, searchTerm]);
 
-  const updateStatus = (shop, nextStatus) => {
-    setRequests((current) =>
-      current.map((entry) => (entry.shop === shop ? { ...entry, status: nextStatus } : entry))
-    );
+  const updateStatus = async (shopId, shopName, nextStatus) => {
+    try {
+      await api.patch(`/api/shops/${shopId}/status`, { status: nextStatus });
+      setNotice(`Status for "${shopName}" updated to ${nextStatus}.`);
+      setRequests((current) =>
+        current.map((entry) => (entry._id === shopId ? { ...entry, status: nextStatus } : entry))
+      );
+    } catch (error) {
+      setNotice(error.message || 'Failed to update shop status.');
+    }
   };
 
-  const restoreApproval = (shop) => {
-    updateStatus(shop, 'Approved');
+  const handleNavigate = (label) => {
+    setActiveItem(label);
+    if (label === 'Products') onViewChange?.('admin-product');
+    if (label === 'Approvals') onViewChange?.('admin-approval');
+    if (label === 'Vendors') onViewChange?.('admin-vendor');
+    if (label === 'Shops') onViewChange?.('admin-shop');
+    if (label === 'Listings') onViewChange?.('admin-listings');
+    if (label === 'Overview' || label === 'Reporting' || label === 'Settings') onViewChange?.('admin-reporting');
   };
 
   return (
@@ -92,13 +98,7 @@ export default function AdminApprovalPage({ onViewChange }) {
               key={item.label}
               type="button"
               className={`admin-approval-nav-item ${activeItem === item.label ? 'active' : ''}`}
-              onClick={() => {
-                setActiveItem(item.label);
-                if (item.label === 'Products') onViewChange?.('admin-product');
-                if (item.label === 'Approvals') onViewChange?.('admin-approval');
-                if (item.label === 'Vendors') onViewChange?.('admin-vendor');
-                if (item.label === 'Overview' || item.label === 'Settings') onViewChange?.('admin-reporting');
-              }}
+              onClick={() => handleNavigate(item.label)}
             >
               <span className="admin-approval-nav-icon">{item.icon}</span>
               <span>{item.label}</span>
@@ -106,8 +106,8 @@ export default function AdminApprovalPage({ onViewChange }) {
           ))}
         </nav>
 
-        <button type="button" className="admin-approval-add-btn">
-          + New Catalog Item
+        <button type="button" className="admin-approval-add-btn" onClick={fetchShops}>
+          ↻ Refresh List
         </button>
       </aside>
 
@@ -115,7 +115,7 @@ export default function AdminApprovalPage({ onViewChange }) {
         <div className="admin-approval-header-row">
           <div>
             <h1>Shop Approval Dashboard</h1>
-            <p>Review vendor registration requests and manage public visibility across registered shops.</p>
+            <p>Review vendor shop registration requests and manage live public visibility in MongoDB.</p>
           </div>
 
           <div className="admin-approval-searchbox">
@@ -124,60 +124,103 @@ export default function AdminApprovalPage({ onViewChange }) {
               type="text"
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder="Search shops or vendors"
+              placeholder="Search shops or vendors..."
             />
           </div>
         </div>
 
+        {notice && (
+          <div
+            style={{
+              padding: '12px',
+              borderRadius: '8px',
+              backgroundColor: '#f0fdf4',
+              color: '#166534',
+              marginBottom: '16px',
+              fontSize: '14px',
+            }}
+          >
+            {notice}
+          </div>
+        )}
+
         <div className="admin-approval-card">
           <div className="admin-approval-table-head">
-            <span>Shop</span>
-            <span>Vendor</span>
+            <span>Shop Name</span>
+            <span>Vendor Info</span>
             <span>Contact</span>
             <span>Status</span>
             <span>Actions</span>
           </div>
 
-          {filteredRequests.map((item) => (
-            <div key={item.shop} className="admin-approval-row">
-              <div className="admin-approval-shop-cell">
-                <div className="admin-approval-shop-badge">🏪</div>
+          {isLoading ? (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}>
+              <div className="spinner spinner-teal"></div>
+            </div>
+          ) : filteredRequests.length > 0 ? (
+            filteredRequests.map((item) => (
+              <div key={item._id} className="admin-approval-row">
+                <div className="admin-approval-shop-cell">
+                  <div className="admin-approval-shop-badge">🏪</div>
+                  <div>
+                    <div className="admin-approval-shop-name">{item.shopName}</div>
+                    <div className="admin-approval-secondary-text">{item.address || 'Address registered'}</div>
+                  </div>
+                </div>
+
                 <div>
-                  <div className="admin-approval-shop-name">{item.shop}</div>
-                  <div className="admin-approval-secondary-text">Market registration request</div>
+                  <div className="admin-approval-main-text">{item.vendor?.name || 'Vendor'}</div>
+                  <div className="admin-approval-secondary-text">{item.vendor?.email}</div>
+                </div>
+
+                <div>
+                  <div className="admin-approval-main-text">{item.phone}</div>
+                  <div className="admin-approval-secondary-text">Vendor phone</div>
+                </div>
+
+                <div>
+                  <span className={badgeClassMap[item.status] || 'status-badge pending'}>
+                    {item.status}
+                  </span>
+                </div>
+
+                <div className="admin-approval-actions">
+                  <button
+                    type="button"
+                    className="admin-approval-action-btn approve"
+                    onClick={() => updateStatus(item._id, item.shopName, 'Approved')}
+                  >
+                    Approve
+                  </button>
+                  <button
+                    type="button"
+                    className="admin-approval-action-btn reject"
+                    onClick={() => updateStatus(item._id, item.shopName, 'Rejected')}
+                  >
+                    Reject
+                  </button>
+                  <button
+                    type="button"
+                    className="admin-approval-action-btn suspend"
+                    onClick={() => updateStatus(item._id, item.shopName, 'Suspended')}
+                  >
+                    Suspend
+                  </button>
+                  <button
+                    type="button"
+                    className="admin-approval-action-btn restore"
+                    onClick={() => updateStatus(item._id, item.shopName, 'Pending')}
+                  >
+                    Set Pending
+                  </button>
                 </div>
               </div>
-
-              <div>
-                <div className="admin-approval-main-text">{item.vendor}</div>
-                <div className="admin-approval-secondary-text">{item.email}</div>
-              </div>
-
-              <div>
-                <div className="admin-approval-main-text">{item.phone}</div>
-                <div className="admin-approval-secondary-text">Call support</div>
-              </div>
-
-              <div>
-                <span className={badgeClassMap[item.status]}>{item.status}</span>
-              </div>
-
-              <div className="admin-approval-actions">
-                <button type="button" className="admin-approval-action-btn approve" onClick={() => updateStatus(item.shop, 'Approved')}>
-                  Approve
-                </button>
-                <button type="button" className="admin-approval-action-btn reject" onClick={() => updateStatus(item.shop, 'Rejected')}>
-                  Reject
-                </button>
-                <button type="button" className="admin-approval-action-btn suspend" onClick={() => updateStatus(item.shop, 'Suspended')}>
-                  Suspend
-                </button>
-                <button type="button" className="admin-approval-action-btn restore" onClick={() => restoreApproval(item.shop)}>
-                  Restore
-                </button>
-              </div>
+            ))
+          ) : (
+            <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+              No shop registrations found in MongoDB.
             </div>
-          ))}
+          )}
         </div>
       </section>
     </div>

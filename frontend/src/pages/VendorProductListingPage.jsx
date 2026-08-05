@@ -1,54 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-
-const initialListings = [
-  {
-    id: 1,
-    productName: 'Basmati Rice 5kg',
-    category: 'Staples & Grains',
-    price: '$14.59',
-    status: 'In Stock',
-    updated: 'Today, 09:41',
-  },
-  {
-    id: 2,
-    productName: 'Organic Brown Eggs (Dozen)',
-    category: 'Dairy & Eggs',
-    price: '$6.99',
-    status: 'Low Stock',
-    updated: 'Yesterday',
-  },
-  {
-    id: 3,
-    productName: 'Extra Virgin Olive Oil 1L',
-    category: 'Pantry',
-    price: '$18.25',
-    status: 'Out of Stock',
-    updated: 'Oct 12, 2023',
-  },
-];
-
-const officialCatalog = [
-  {
-    name: 'Premium Basmati Rice 5kg',
-    category: 'Staples & Grains',
-    unit: '5kg',
-  },
-  {
-    name: 'Organic Brown Eggs (Dozen)',
-    category: 'Dairy & Eggs',
-    unit: 'Dozen',
-  },
-  {
-    name: 'Extra Virgin Olive Oil 1L',
-    category: 'Pantry',
-    unit: '1L',
-  },
-  {
-    name: 'Fresh Aloe Vera Drink 500ml',
-    category: 'Beverages',
-    unit: '500ml',
-  },
-];
+import { api } from '../services/api';
 
 const navItems = [
   { label: 'Shop Profile', icon: '🏪' },
@@ -67,33 +18,50 @@ const statusClassName = {
 export default function VendorProductListingPage({ user, onViewChange }) {
   const [catalogSearchTerm, setCatalogSearchTerm] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [currentPrice, setCurrentPrice] = useState('0.00');
+  const [currentPrice, setCurrentPrice] = useState('');
   const [stockStatus, setStockStatus] = useState('In Stock');
-  const [listings, setListings] = useState(initialListings);
+  const [officialCatalog, setOfficialCatalog] = useState([]);
+  const [listings, setListings] = useState([]);
+  const [shop, setShop] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [notice, setNotice] = useState('');
   const [activeItem, setActiveItem] = useState('Product Selection');
-  const [shopImage, setShopImage] = useState('');
-  const [selectedProduct, setSelectedProduct] = useState(officialCatalog[0]);
+  const [selectedProduct, setSelectedProduct] = useState(null);
   const [editingListingId, setEditingListingId] = useState(null);
-  const statusSummary = [
-    { label: 'Pending', tone: 'pending' },
-    { label: 'Approved', tone: 'approved' },
-    { label: 'Rejected', tone: 'rejected' },
-    { label: 'Suspended', tone: 'suspended' },
-  ];
 
-  const vendorName = user?.name || user?.fullName || user?.email || 'Vendor';
+  const vendorName = user?.name || user?.email || 'Vendor';
+
+  // Fetch official catalog, vendor shop, and vendor listings from MongoDB
+  const loadData = async () => {
+    setIsLoading(true);
+    setNotice('');
+    try {
+      const [productsRes, shopRes] = await Promise.all([
+        api.get('/api/products').catch(() => ({ products: [] })),
+        api.get('/api/shops/my-shop').catch(() => ({ shop: null })),
+      ]);
+
+      setOfficialCatalog(productsRes.products || []);
+      setShop(shopRes.shop || null);
+
+      if (productsRes.products && productsRes.products.length > 0) {
+        setSelectedProduct(productsRes.products[0]);
+      }
+
+      if (shopRes.shop) {
+        const listingsRes = await api.get('/api/listings/my-listings').catch(() => ({ listings: [] }));
+        setListings(listingsRes.listings || []);
+      }
+    } catch (error) {
+      setNotice('Failed to load data from database.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const draft = localStorage.getItem('marketeye_vendor_profile_draft');
-    if (!draft) return;
-
-    try {
-      const parsedDraft = JSON.parse(draft);
-      if (parsedDraft.shopImage) setShopImage(parsedDraft.shopImage);
-    } catch (error) {
-      console.error('Could not restore vendor profile image', error);
-    }
+    loadData();
   }, []);
 
   const filteredCatalog = useMemo(() => {
@@ -103,61 +71,94 @@ export default function VendorProductListingPage({ user, onViewChange }) {
     return officialCatalog.filter((product) =>
       [product.name, product.category, product.unit].join(' ').toLowerCase().includes(q)
     );
-  }, [catalogSearchTerm]);
+  }, [catalogSearchTerm, officialCatalog]);
 
   const filteredListings = useMemo(() => {
     return listings.filter((listing) => {
       const q = searchTerm.trim().toLowerCase();
       if (!q) return true;
-      return listing.productName.toLowerCase().includes(q) || listing.category.toLowerCase().includes(q);
+      const pName = listing.product?.name || '';
+      const cat = listing.product?.category || '';
+      return pName.toLowerCase().includes(q) || cat.toLowerCase().includes(q);
     });
   }, [listings, searchTerm]);
 
-  const handlePublishListing = () => {
-    if (!selectedProduct) {
-      setNotice('Please select a product from the official catalog first.');
+  const handlePublishListing = async () => {
+    if (!shop) {
+      setNotice('Please create a Shop Profile first before adding listings.');
       return;
     }
 
-    const publishedListing = {
-      id: editingListingId ?? Date.now(),
-      productName: selectedProduct.name,
-      category: selectedProduct.category,
-      price: `$${Number(currentPrice || 0).toFixed(2)}`,
-      status: stockStatus,
-      updated: editingListingId ? 'Edited just now' : 'Just now',
-    };
+    if (shop.status !== 'Approved') {
+      setNotice(`Your shop status is "${shop.status}". Listings can only be published once Admin approves your shop.`);
+      return;
+    }
 
-    setListings((current) => {
+    if (!selectedProduct) {
+      setNotice('Please select an official product from the catalog.');
+      return;
+    }
+
+    const priceNum = parseFloat(currentPrice);
+    if (isNaN(priceNum) || priceNum <= 0) {
+      setNotice('Please enter a valid price greater than 0.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setNotice('');
+
+    try {
       if (editingListingId) {
-        return current.map((entry) => (entry.id === editingListingId ? publishedListing : entry));
+        await api.put(`/api/listings/${editingListingId}`, {
+          price: priceNum,
+          stockStatus,
+        });
+        setNotice('Listing updated successfully!');
+      } else {
+        await api.post('/api/listings', {
+          product: selectedProduct._id,
+          price: priceNum,
+          stockStatus,
+        });
+        setNotice('Listing published successfully to your shop!');
       }
 
-      return [publishedListing, ...current];
-    });
+      setEditingListingId(null);
+      setCurrentPrice('');
+      setStockStatus('In Stock');
 
-    setNotice(editingListingId ? 'Listing updated successfully.' : 'Listing published successfully.');
-    setEditingListingId(null);
-    setCurrentPrice('0.00');
-    setStockStatus('In Stock');
+      // Refresh listings from DB
+      const listingsRes = await api.get('/api/listings/my-listings');
+      setListings(listingsRes.listings || []);
+    } catch (error) {
+      setNotice(error.message || 'Failed to publish listing.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleEditListing = (listing) => {
     setActiveItem('Product Selection');
-    setEditingListingId(listing.id);
-    setSelectedProduct({
-      name: listing.productName,
-      category: listing.category,
-      unit: listing.productName.split(' ').slice(-1)[0],
-    });
-    setCurrentPrice(listing.price.replace('$', ''));
-    setStockStatus(listing.status);
-    setNotice(`Editing ${listing.productName}. Update the price or stock and publish again.`);
+    setEditingListingId(listing._id);
+    if (listing.product) {
+      setSelectedProduct(listing.product);
+    }
+    setCurrentPrice(String(listing.price));
+    setStockStatus(listing.stockStatus || 'In Stock');
+    setNotice(`Editing listing for ${listing.product?.name}. Modify price or stock and click Update.`);
   };
 
-  const handleDeleteListing = (id) => {
-    setListings((current) => current.filter((listing) => listing.id !== id));
-    setNotice('Listing removed from your shop inventory.');
+  const handleDeleteListing = async (listingId) => {
+    if (!window.confirm('Are you sure you want to delete this product listing?')) return;
+
+    try {
+      await api.delete(`/api/listings/${listingId}`);
+      setNotice('Listing deleted from database.');
+      setListings((current) => current.filter((item) => item._id !== listingId));
+    } catch (error) {
+      setNotice(error.message || 'Failed to delete listing.');
+    }
   };
 
   return (
@@ -166,17 +167,7 @@ export default function VendorProductListingPage({ user, onViewChange }) {
         <div className="vendor-listing-brand">MarketEye</div>
 
         <div className="vendor-listing-user-card">
-          <div className="vendor-listing-avatar">
-            {shopImage ? (
-              <img
-                src={shopImage}
-                alt="Shop logo"
-                style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
-              />
-            ) : (
-              'V'
-            )}
-          </div>
+          <div className="vendor-listing-avatar">{vendorName.charAt(0).toUpperCase()}</div>
           <div>
             <div className="vendor-listing-user-name">{vendorName}</div>
             <div className="vendor-listing-user-role">Shop Management</div>
@@ -198,14 +189,6 @@ export default function VendorProductListingPage({ user, onViewChange }) {
                 onClick={() => {
                   setActiveItem(item.label);
                   onViewChange?.(targetView);
-
-                  if (item.label === 'Approval Status') {
-                    setNotice('Approval status is visible from your shop management workspace.');
-                  } else if (item.label === 'Settings') {
-                    setNotice('Shop settings are ready for future vendor preferences.');
-                  } else if (item.label === 'Shop Profile') {
-                    setNotice('Shop profile is available for vendor details and image updates.');
-                  }
                 }}
               >
                 <span className="vendor-listing-nav-icon">{item.icon}</span>
@@ -220,8 +203,9 @@ export default function VendorProductListingPage({ user, onViewChange }) {
           className="vendor-listing-add-btn"
           onClick={() => {
             setActiveItem('Product Selection');
-            setNotice('Select an official product, set price and stock, then publish the listing.');
-            onViewChange?.('vendor-listing');
+            setEditingListingId(null);
+            setCurrentPrice('');
+            setNotice('Select an official product from MongoDB catalog, set price and stock, then publish.');
           }}
         >
           + Add Product
@@ -230,21 +214,70 @@ export default function VendorProductListingPage({ user, onViewChange }) {
 
       <section className="vendor-listing-content">
         <div className="vendor-listing-page-title-wrap">
-          <h1>{activeItem === 'Product Selection' ? 'Vendor Product Selection' : activeItem === 'Manage Listings' ? 'Manage Vendor Listings' : activeItem}</h1>
+          <h1>
+            {activeItem === 'Product Selection'
+              ? 'Vendor Product Selection'
+              : activeItem === 'Manage Listings'
+              ? 'Manage Vendor Listings'
+              : activeItem}
+          </h1>
           <p>
             {activeItem === 'Product Selection'
-              ? 'Select products from the official MarketEye catalog, configure the price, and publish your shop inventory.'
+              ? 'Select official products created by Admin, set your shop price & stock, and publish directly to MongoDB.'
               : activeItem === 'Manage Listings'
-                ? 'Review every personal listing, update pricing, and remove outdated inventory from the shop view.'
-                : 'Your shop dashboard keeps every vendor workflow visible in one streamlined workspace.'}
+              ? 'Review all your live listings, edit pricing, or remove items.'
+              : 'Your vendor workspace is synced with live database data.'}
           </p>
         </div>
 
-        {activeItem === 'Manage Listings' ? (
+        {/* Shop status check banner */}
+        {shop && shop.status !== 'Approved' && (
+          <div
+            style={{
+              backgroundColor: '#fffbe6',
+              border: '1px solid #ffe58f',
+              padding: '14px 18px',
+              borderRadius: '8px',
+              marginBottom: '20px',
+              color: '#873800',
+              fontSize: '14px',
+            }}
+          >
+            ⚠️ Your shop status is <strong>{shop.status}</strong>. Only approved shops can publish active listings to customers.
+          </div>
+        )}
+
+        {!shop && (
+          <div
+            style={{
+              backgroundColor: '#eff6ff',
+              border: '1px solid #bfdbfe',
+              padding: '14px 18px',
+              borderRadius: '8px',
+              marginBottom: '20px',
+              color: '#1e40af',
+              fontSize: '14px',
+            }}
+          >
+            ℹ️ You have not created a shop profile yet.{' '}
+            <span
+              style={{ textDecoration: 'underline', cursor: 'pointer', fontWeight: 600 }}
+              onClick={() => onViewChange?.('vendor-profile')}
+            >
+              Click here to create your shop profile.
+            </span>
+          </div>
+        )}
+
+        {isLoading ? (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}>
+            <div className="spinner spinner-teal"></div>
+          </div>
+        ) : activeItem === 'Manage Listings' ? (
           <div className="vendor-listing-grid single-mode">
             <div className="vendor-listing-card vendor-listing-table-card">
               <div className="vendor-listing-card-title-row">
-                <div className="vendor-listing-card-title">Manage My Listings</div>
+                <div className="vendor-listing-card-title">My Live Listings ({listings.length})</div>
                 <div className="vendor-listing-search-filter">
                   <span>⌕</span>
                   <input
@@ -260,129 +293,119 @@ export default function VendorProductListingPage({ user, onViewChange }) {
                 <span>Product Name</span>
                 <span>Price</span>
                 <span>Status</span>
-                <span>Updated</span>
                 <span>Actions</span>
               </div>
 
-              {filteredListings.map((listing, index) => (
-                <div key={`${listing.productName}-${index}`} className="vendor-listing-row vendor-listing-action-row">
-                  <div className="vendor-listing-product-cell">
-                    <div className="vendor-listing-product-thumb">⦿</div>
-                    <div>
-                      <div className="vendor-listing-product-name">{listing.productName}</div>
-                      <div className="vendor-listing-product-category">{listing.category}</div>
+              {filteredListings.length > 0 ? (
+                filteredListings.map((listing) => (
+                  <div key={listing._id} className="vendor-listing-row vendor-listing-action-row">
+                    <div className="vendor-listing-product-cell">
+                      <div className="vendor-listing-product-thumb">⦿</div>
+                      <div>
+                        <div className="vendor-listing-product-name">{listing.product?.name || 'Product'}</div>
+                        <div className="vendor-listing-product-category">
+                          {listing.product?.category} • {listing.product?.unit}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="vendor-listing-price-cell">${listing.price?.toFixed(2)}</div>
+                    <div className="vendor-listing-status-cell">
+                      <span className={statusClassName[listing.stockStatus] || 'listing-status'}>
+                        {listing.stockStatus}
+                      </span>
+                    </div>
+                    <div className="vendor-listing-actions-cell">
+                      <button
+                        type="button"
+                        className="vendor-listing-action-btn edit"
+                        onClick={() => handleEditListing(listing)}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        className="vendor-listing-action-btn delete"
+                        onClick={() => handleDeleteListing(listing._id)}
+                      >
+                        Delete
+                      </button>
                     </div>
                   </div>
-                  <div className="vendor-listing-price-cell">{listing.price}</div>
-                  <div className="vendor-listing-status-cell">
-                    <span className={statusClassName[listing.status]}>{listing.status}</span>
-                  </div>
-                  <div className="vendor-listing-updated-cell">{listing.updated}</div>
-                  <div className="vendor-listing-actions-cell">
-                    <button type="button" className="vendor-listing-action-btn edit" onClick={() => handleEditListing(listing)}>
-                      Edit
-                    </button>
-                    <button type="button" className="vendor-listing-action-btn delete" onClick={() => handleDeleteListing(listing.id)}>
-                      Delete
-                    </button>
-                  </div>
+                ))
+              ) : (
+                <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                  No listings found. Go to "Product Selection" to create your first listing.
                 </div>
-              ))}
-
-              <div className="vendor-listing-pagination-row">
-                <span>Showing 1-3 of 42 listings</span>
-                <div className="vendor-listing-pagination-icons">
-                  <span>‹</span>
-                  <span>›</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : activeItem === 'Approval Status' ? (
-          <div className="vendor-listing-grid single-mode">
-            <div className="vendor-listing-card">
-              <div className="vendor-listing-card-title">Approval Status</div>
-              <div className="vendor-status-grid">
-                {statusSummary.map((state) => (
-                  <div key={state.label} className={`vendor-status-chip ${state.tone}`}>
-                    <strong>{state.label}</strong>
-                    <span>Review state</span>
-                  </div>
-                ))}
-              </div>
-              <div className="vendor-listing-notice">Current shop review status: Pending Approval</div>
-            </div>
-          </div>
-        ) : activeItem === 'Settings' ? (
-          <div className="vendor-listing-grid single-mode">
-            <div className="vendor-listing-card">
-              <div className="vendor-listing-card-title">Vendor Settings</div>
-              <div className="vendor-settings-rows">
-                <div className="vendor-setting-item">
-                  <span>Auto-sync with catalog</span>
-                  <button type="button" className="vendor-mini-toggle on">Enabled</button>
-                </div>
-                <div className="vendor-setting-item">
-                  <span>Price alert notifications</span>
-                  <button type="button" className="vendor-mini-toggle on">On</button>
-                </div>
-                <div className="vendor-setting-item">
-                  <span>Stock freshness reminders</span>
-                  <button type="button" className="vendor-mini-toggle">Weekly</button>
-                </div>
-              </div>
+              )}
             </div>
           </div>
         ) : (
           <div className="vendor-listing-grid single-mode">
             <div className="vendor-listing-card">
-              <div className="vendor-listing-card-title">Product Selection</div>
+              <div className="vendor-listing-card-title">Product Selection (Official Catalog)</div>
 
-              <div className="vendor-listing-field-label">Official Product List</div>
+              <div className="vendor-listing-field-label">Select Official Product from Database</div>
               <div className="vendor-listing-searchbox">
                 <span>⌕</span>
                 <input
                   type="text"
                   value={catalogSearchTerm}
                   onChange={(event) => setCatalogSearchTerm(event.target.value)}
-                  placeholder="Search official catalog"
+                  placeholder="Search official catalog..."
                 />
               </div>
 
               <div className="vendor-listing-catalog-list">
-                {filteredCatalog.map((product) => (
-                  <button
-                    key={product.name}
-                    type="button"
-                    className={`vendor-listing-catalog-item ${selectedProduct?.name === product.name ? 'selected' : ''}`}
-                    onClick={() => {
-                      setSelectedProduct(product);
-                      setNotice(`Selected ${product.name} from the official catalog.`);
-                    }}
-                  >
-                    <div>
-                      <div className="vendor-listing-product-name">{product.name}</div>
-                      <div className="vendor-listing-product-category">{product.category} • {product.unit}</div>
+                {filteredCatalog.length > 0 ? (
+                  filteredCatalog.map((product) => (
+                    <button
+                      key={product._id}
+                      type="button"
+                      className={`vendor-listing-catalog-item ${
+                        selectedProduct?._id === product._id ? 'selected' : ''
+                      }`}
+                      onClick={() => {
+                        setSelectedProduct(product);
+                        setNotice(`Selected: ${product.name}`);
+                      }}
+                    >
+                      <div>
+                        <div className="vendor-listing-product-name">{product.name}</div>
+                        <div className="vendor-listing-product-category">
+                          {product.category} • {product.unit}
+                        </div>
+                      </div>
+                    </button>
+                  ))
+                ) : (
+                  <div style={{ padding: '20px', color: 'var(--text-secondary)', textAlign: 'center' }}>
+                    No active products found in official catalog. Admin must add official products first.
+                  </div>
+                )}
+              </div>
+
+              {selectedProduct && (
+                <div className="vendor-listing-selected-product">
+                  <div className="vendor-listing-field-label">Selected Product</div>
+                  <div className="vendor-listing-selected-box">
+                    <div className="vendor-listing-product-name">{selectedProduct.name}</div>
+                    <div className="vendor-listing-product-category">
+                      {selectedProduct.category} • {selectedProduct.unit}
                     </div>
-                  </button>
-                ))}
-              </div>
-
-              <div className="vendor-listing-selected-product">
-                <div className="vendor-listing-field-label">Selected Product</div>
-                <div className="vendor-listing-selected-box">
-                  <div className="vendor-listing-product-name">{selectedProduct?.name}</div>
-                  <div className="vendor-listing-product-category">{selectedProduct?.category} • {selectedProduct?.unit}</div>
+                  </div>
                 </div>
-              </div>
+              )}
 
-              <label className="vendor-listing-form-label">Your Current Price</label>
+              <label className="vendor-listing-form-label">Your Current Price ($)</label>
               <div className="vendor-listing-price-input">
                 <span>$</span>
                 <input
-                  type="text"
+                  type="number"
+                  step="0.01"
+                  min="0.01"
                   value={currentPrice}
                   onChange={(event) => setCurrentPrice(event.target.value)}
+                  placeholder="0.00"
                 />
               </div>
 
@@ -400,11 +423,33 @@ export default function VendorProductListingPage({ user, onViewChange }) {
                 ))}
               </div>
 
-              <button type="button" className="vendor-listing-publish-btn" onClick={handlePublishListing}>
-                {editingListingId ? 'Update Listing' : '⤴ Publish Listing'}
+              <button
+                type="button"
+                className="vendor-listing-publish-btn"
+                onClick={handlePublishListing}
+                disabled={isSubmitting}
+              >
+                {isSubmitting
+                  ? 'Saving...'
+                  : editingListingId
+                  ? 'Update Listing'
+                  : '⤴ Publish Listing'}
               </button>
 
-              {notice && <div className="vendor-listing-notice">{notice}</div>}
+              {notice && (
+                <div
+                  className="vendor-listing-notice"
+                  style={{
+                    marginTop: '14px',
+                    padding: '12px',
+                    borderRadius: '8px',
+                    backgroundColor: notice.includes('Failed') || notice.includes('Please') || notice.includes('status') ? '#fef2f2' : '#f0fdf4',
+                    color: notice.includes('Failed') || notice.includes('Please') || notice.includes('status') ? '#dc2626' : '#166534',
+                  }}
+                >
+                  {notice}
+                </div>
+              )}
             </div>
           </div>
         )}

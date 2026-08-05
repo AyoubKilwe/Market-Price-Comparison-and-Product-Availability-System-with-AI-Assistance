@@ -1,76 +1,100 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { api } from '../services/api';
 
 const navItems = [
   { label: 'Overview', icon: '▦', active: true },
   { label: 'Products', icon: '▣' },
   { label: 'Approvals', icon: '✓' },
   { label: 'Vendors', icon: '◫' },
+  { label: 'Shops', icon: '🏪' },
+  { label: 'Listings', icon: '🧾' },
   { label: 'Reporting', icon: '📊' },
   { label: 'Settings', icon: '⚙' },
-];
-
-const overviewCards = [
-  { title: 'Registered Shops', value: '128', tone: 'blue' },
-  { title: 'Approved Shops', value: '94', tone: 'green' },
-  { title: 'Active Listings', value: '1,260', tone: 'amber' },
-  { title: 'Publicly Visible', value: '842', tone: 'teal' },
-];
-
-const initialPerformanceRows = [
-  { name: 'FreshMart Retail', visibility: 'Visible', listings: 24, change: '+8%' },
-  { name: 'CityGrocer Hub', visibility: 'Visible', listings: 18, change: '+3%' },
-  { name: 'SomMart Plus', visibility: 'Hidden', listings: 9, change: '-2%' },
-  { name: 'Nile Essentials', visibility: 'Visible', listings: 31, change: '+12%' },
 ];
 
 export default function AdminReportingPage({ onViewChange }) {
   const [activeItem, setActiveItem] = useState('Overview');
   const [searchTerm, setSearchTerm] = useState('');
-  const [performanceRows, setPerformanceRows] = useState(initialPerformanceRows);
+  const [stats, setStats] = useState({
+    totalProducts: 0,
+    totalShops: 0,
+    approvedShops: 0,
+    pendingShops: 0,
+    totalVendors: 0,
+    activeVendors: 0,
+    suspendedVendors: 0,
+    totalListings: 0,
+    activeListings: 0,
+  });
+  const [performanceRows, setPerformanceRows] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [notice, setNotice] = useState('');
 
-  const visibleCount = useMemo(() => {
-    return performanceRows.filter((row) => row.visibility === 'Visible').length;
-  }, [performanceRows]);
+  // Fetch live reporting statistics from MongoDB
+  const fetchReporting = async () => {
+    setIsLoading(true);
+    try {
+      const data = await api.get('/api/admin/reporting');
+      setStats(data.stats || {});
+      setPerformanceRows(data.shops || []);
+    } catch (error) {
+      setNotice(error.message || 'Failed to load system metrics.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  const totalListings = useMemo(() => {
-    return performanceRows.reduce((sum, row) => sum + row.listings, 0);
-  }, [performanceRows]);
+  useEffect(() => {
+    fetchReporting();
+  }, []);
 
   const overviewCards = useMemo(() => {
     return [
-      { title: 'Registered Shops', value: String(performanceRows.length), tone: 'blue' },
-      { title: 'Approved Shops', value: String(visibleCount), tone: 'green' },
-      { title: 'Active Listings', value: String(totalListings), tone: 'amber' },
-      { title: 'Publicly Visible', value: String(visibleCount), tone: 'teal' },
+      { title: 'Total Products', value: String(stats.totalProducts ?? 0), tone: 'blue' },
+      { title: 'Registered Shops', value: String(stats.totalShops ?? 0), tone: 'teal' },
+      { title: 'Approved Shops', value: String(stats.approvedShops ?? 0), tone: 'green' },
+      { title: 'Pending Approvals', value: String(stats.pendingShops ?? 0), tone: 'amber' },
+      { title: 'Total Vendors', value: String(stats.totalVendors ?? 0), tone: 'blue' },
+      { title: 'Active Vendors', value: String(stats.activeVendors ?? 0), tone: 'green' },
+      { title: 'Suspended Vendors', value: String(stats.suspendedVendors ?? 0), tone: 'amber' },
+      { title: 'Active Listings', value: String(stats.activeListings ?? 0), tone: 'teal' },
     ];
-  }, [performanceRows.length, totalListings, visibleCount]);
+  }, [stats]);
 
   const filteredRows = useMemo(() => {
     const query = searchTerm.trim().toLowerCase();
     if (!query) return performanceRows;
 
-    return performanceRows.filter((row) =>
-      [row.name, row.visibility, row.listings, row.change].join(' ').toLowerCase().includes(query)
-    );
+    return performanceRows.filter((row) => {
+      const vName = row.vendor?.name || '';
+      return [row.shopName, vName, row.status, row.address]
+        .join(' ')
+        .toLowerCase()
+        .includes(query);
+    });
   }, [performanceRows, searchTerm]);
+
+  const toggleVisibility = async (shopId, shopName, currentStatus) => {
+    const nextStatus = currentStatus === 'Approved' ? 'Suspended' : 'Approved';
+    try {
+      await api.patch(`/api/shops/${shopId}/status`, { status: nextStatus });
+      setNotice(`Updated status for "${shopName}" to ${nextStatus}.`);
+      setPerformanceRows((current) =>
+        current.map((row) => (row._id === shopId ? { ...row, status: nextStatus } : row))
+      );
+    } catch (error) {
+      setNotice(error.message || 'Failed to update shop status.');
+    }
+  };
 
   const handleNavigate = (label) => {
     setActiveItem(label);
-
     if (label === 'Products') return onViewChange?.('admin-product');
     if (label === 'Approvals') return onViewChange?.('admin-approval');
     if (label === 'Vendors') return onViewChange?.('admin-vendor');
+    if (label === 'Shops') return onViewChange?.('admin-shop');
+    if (label === 'Listings') return onViewChange?.('admin-listings');
     if (label === 'Overview' || label === 'Reporting' || label === 'Settings') return onViewChange?.('admin-reporting');
-  };
-
-  const toggleVisibility = (shopName) => {
-    setPerformanceRows((current) =>
-      current.map((row) =>
-        row.name === shopName
-          ? { ...row, visibility: row.visibility === 'Visible' ? 'Hidden' : 'Visible' }
-          : row
-      )
-    );
   };
 
   return (
@@ -100,16 +124,16 @@ export default function AdminReportingPage({ onViewChange }) {
           ))}
         </nav>
 
-        <button type="button" className="admin-reporting-add-btn">
-          + Generate Report
+        <button type="button" className="admin-reporting-add-btn" onClick={fetchReporting}>
+          ↻ Refresh Metrics
         </button>
       </aside>
 
       <section className="admin-reporting-content">
         <div className="admin-reporting-header-row">
           <div>
-            <h1>Admin Reporting & System Control</h1>
-            <p>Review marketplace health, approved storefront visibility, and high-level shop activity in one place.</p>
+            <h1>Admin Reporting & System Metrics</h1>
+            <p>Real-time analytics directly calculated from MongoDB collections.</p>
           </div>
 
           <div className="admin-reporting-searchbox">
@@ -118,42 +142,88 @@ export default function AdminReportingPage({ onViewChange }) {
               type="text"
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder="Search shops or metrics"
+              placeholder="Search shops or metrics..."
             />
           </div>
         </div>
 
-        <div className="admin-reporting-summary-grid">
-          {overviewCards.map((card) => (
-            <div key={card.title} className={`admin-reporting-card ${card.tone}`}>
-              <div className="admin-reporting-card-title">{card.title}</div>
-              <div className="admin-reporting-card-value">{card.value}</div>
-            </div>
-          ))}
-        </div>
-
-        <div className="admin-reporting-table-card">
-          <div className="admin-reporting-table-head">
-            <span>Shop</span>
-            <span>Visibility</span>
-            <span>Listings</span>
-            <span>Change</span>
+        {notice && (
+          <div
+            style={{
+              padding: '12px',
+              borderRadius: '8px',
+              backgroundColor: '#f0fdf4',
+              color: '#166534',
+              marginBottom: '16px',
+              fontSize: '14px',
+            }}
+          >
+            {notice}
           </div>
+        )}
 
-          {filteredRows.map((row) => (
-            <div key={row.name} className="admin-reporting-row">
-              <div className="admin-reporting-name-cell">{row.name}</div>
-              <div>{row.visibility}</div>
-              <div>{row.listings}</div>
-              <div className="admin-reporting-change">{row.change}</div>
-              <div>
-                <button type="button" className="admin-reporting-toggle-btn" onClick={() => toggleVisibility(row.name)}>
-                  {row.visibility === 'Visible' ? 'Hide on Site' : 'Show on Site'}
-                </button>
-              </div>
+        {isLoading ? (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}>
+            <div className="spinner spinner-teal"></div>
+          </div>
+        ) : (
+          <>
+            <div className="admin-reporting-summary-grid">
+              {overviewCards.map((card) => (
+                <div key={card.title} className={`admin-reporting-card ${card.tone}`}>
+                  <div className="admin-reporting-card-title">{card.title}</div>
+                  <div className="admin-reporting-card-value">{card.value}</div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+
+            <div className="admin-reporting-table-card">
+              <div className="admin-reporting-table-head">
+                <span>Shop Name</span>
+                <span>Vendor</span>
+                <span>Approval Status</span>
+                <span>Public Visibility</span>
+                <span>Actions</span>
+              </div>
+
+              {filteredRows.length > 0 ? (
+                filteredRows.map((row) => (
+                  <div key={row._id} className="admin-reporting-row">
+                    <div className="admin-reporting-name-cell">{row.shopName}</div>
+                    <div>{row.vendor?.name || 'Vendor'}</div>
+                    <div>
+                      <span
+                        className={
+                          row.status === 'Approved'
+                            ? 'vendor-status active'
+                            : row.status === 'Pending'
+                            ? 'vendor-status pending'
+                            : 'vendor-status suspended'
+                        }
+                      >
+                        {row.status}
+                      </span>
+                    </div>
+                    <div>{row.status === 'Approved' ? 'Visible on Site' : 'Hidden from Site'}</div>
+                    <div>
+                      <button
+                        type="button"
+                        className="admin-reporting-toggle-btn"
+                        onClick={() => toggleVisibility(row._id, row.shopName, row.status)}
+                      >
+                        {row.status === 'Approved' ? 'Suspend Shop' : 'Approve Shop'}
+                      </button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                  No registered shops found in MongoDB.
+                </div>
+              )}
+            </div>
+          </>
+        )}
       </section>
     </div>
   );

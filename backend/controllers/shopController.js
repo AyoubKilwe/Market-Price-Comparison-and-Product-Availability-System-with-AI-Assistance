@@ -62,12 +62,58 @@ const getAllShops = asyncHandler(async (req, res) => {
   return res.status(200).json({ shops });
 });
 
+const User = require('../models/User');
+const Product = require('../models/Product');
+
+const getReportingStats = asyncHandler(async (req, res) => {
+  const [
+    totalProducts,
+    totalShops,
+    approvedShops,
+    pendingShops,
+    totalVendors,
+    activeVendors,
+    suspendedVendors,
+    totalListings,
+    activeListings,
+    shopsList,
+  ] = await Promise.all([
+    Product.countDocuments(),
+    Shop.countDocuments(),
+    Shop.countDocuments({ status: 'Approved' }),
+    Shop.countDocuments({ status: 'Pending' }),
+    User.countDocuments({ role: 'Vendor' }),
+    User.countDocuments({ role: 'Vendor', status: 'Active' }),
+    User.countDocuments({ role: 'Vendor', status: 'Suspended' }),
+    Listing.countDocuments(),
+    Listing.countDocuments({ isActive: true }),
+    Shop.find().populate('vendor', 'name email').sort({ createdAt: -1 }),
+  ]);
+
+  return res.status(200).json({
+    stats: {
+      totalProducts,
+      totalShops,
+      approvedShops,
+      pendingShops,
+      totalVendors,
+      activeVendors,
+      suspendedVendors,
+      totalListings,
+      activeListings,
+    },
+    shops: shopsList,
+  });
+});
+
 module.exports = {
   createShop,
   getAllShops,
   getApprovedShops,
   getMyShop,
+  getReportingStats,
   getShop,
   updateMyShop,
   updateShopStatus,
 };
+

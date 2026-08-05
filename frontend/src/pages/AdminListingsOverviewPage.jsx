@@ -1,35 +1,5 @@
-import React, { useMemo, useState } from 'react';
-
-const listingRows = [
-  {
-    product: 'Premium Basmati Rice 5kg',
-    shop: 'FreshMart Retail',
-    price: '$16.14',
-    stock: '42 units',
-    status: 'Active',
-  },
-  {
-    product: 'Organic Brown Eggs (Dozen)',
-    shop: 'CityGrocer Hub',
-    price: '$7.49',
-    stock: '9 units',
-    status: 'Active',
-  },
-  {
-    product: 'Extra Virgin Olive Oil 1L',
-    shop: 'SomMart Plus',
-    price: '$18.92',
-    stock: '0 units',
-    status: 'Archived',
-  },
-  {
-    product: 'Fresh Aloe Vera Drink 500ml',
-    shop: 'Nile Essentials',
-    price: '$4.35',
-    stock: '31 units',
-    status: 'Active',
-  },
-];
+import React, { useEffect, useMemo, useState } from 'react';
+import { api } from '../services/api';
 
 const navItems = [
   { label: 'Overview', icon: '▦' },
@@ -43,44 +13,57 @@ const navItems = [
 ];
 
 const statusClassName = {
-  Active: 'listing-status in-stock',
-  Archived: 'listing-status out-of-stock',
+  'In Stock': 'listing-status in-stock',
+  'Low Stock': 'listing-status low-stock',
+  'Out of Stock': 'listing-status out-of-stock',
 };
 
 export default function AdminListingsOverviewPage({ onViewChange }) {
   const [activeItem, setActiveItem] = useState('Listings');
   const [searchTerm, setSearchTerm] = useState('');
-  const [rows, setRows] = useState(listingRows);
+  const [rows, setRows] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [notice, setNotice] = useState('');
+
+  // Fetch all product listings across all shops from MongoDB
+  const fetchListings = async () => {
+    setIsLoading(true);
+    try {
+      const data = await api.get('/api/admin/listings');
+      setRows(data.listings || []);
+    } catch (error) {
+      setNotice(error.message || 'Failed to load listings overview.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchListings();
+  }, []);
 
   const filteredRows = useMemo(() => {
     const query = searchTerm.trim().toLowerCase();
     if (!query) return rows;
 
-    return rows.filter((row) =>
-      [row.product, row.shop, row.price, row.stock, row.status].join(' ').toLowerCase().includes(query)
-    );
+    return rows.filter((row) => {
+      const pName = row.product?.name || '';
+      const sName = row.shop?.shopName || '';
+      return [pName, sName, String(row.price), row.stockStatus]
+        .join(' ')
+        .toLowerCase()
+        .includes(query);
+    });
   }, [rows, searchTerm]);
 
   const handleNavigate = (label) => {
     setActiveItem(label);
-
     if (label === 'Products') return onViewChange?.('admin-product');
     if (label === 'Approvals') return onViewChange?.('admin-approval');
     if (label === 'Vendors') return onViewChange?.('admin-vendor');
     if (label === 'Shops') return onViewChange?.('admin-shop');
     if (label === 'Listings') return onViewChange?.('admin-listings');
-    if (label === 'Reporting') return onViewChange?.('admin-reporting');
-    if (label === 'Overview' || label === 'Settings') return onViewChange?.('admin-reporting');
-  };
-
-  const toggleListingStatus = (product) => {
-    setRows((current) =>
-      current.map((row) =>
-        row.product === product
-          ? { ...row, status: row.status === 'Active' ? 'Archived' : 'Active' }
-          : row
-      )
-    );
+    if (label === 'Overview' || label === 'Reporting' || label === 'Settings') return onViewChange?.('admin-reporting');
   };
 
   return (
@@ -110,8 +93,8 @@ export default function AdminListingsOverviewPage({ onViewChange }) {
           ))}
         </nav>
 
-        <button type="button" className="admin-reporting-add-btn">
-          + Refresh Overview
+        <button type="button" className="admin-reporting-add-btn" onClick={fetchListings}>
+          ↻ Refresh Overview
         </button>
       </aside>
 
@@ -119,7 +102,7 @@ export default function AdminListingsOverviewPage({ onViewChange }) {
         <div className="admin-reporting-header-row">
           <div>
             <h1>Listings Overview</h1>
-            <p>Monitor all catalog submissions, pricing, and shop stock visibility for the public marketplace.</p>
+            <p>Monitor all product prices, stock status, and shop listings submitted to MongoDB.</p>
           </div>
 
           <div className="admin-reporting-searchbox">
@@ -128,37 +111,75 @@ export default function AdminListingsOverviewPage({ onViewChange }) {
               type="text"
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder="Search listings"
+              placeholder="Search listings..."
             />
           </div>
         </div>
 
+        {notice && (
+          <div
+            style={{
+              padding: '12px',
+              borderRadius: '8px',
+              backgroundColor: '#fef2f2',
+              color: '#dc2626',
+              marginBottom: '16px',
+              fontSize: '14px',
+            }}
+          >
+            {notice}
+          </div>
+        )}
+
         <div className="admin-reporting-table-card">
           <div className="admin-reporting-table-head">
-            <span>Product</span>
-            <span>Shop</span>
+            <span>Official Product</span>
+            <span>Retailer / Shop</span>
             <span>Price</span>
-            <span>Stock</span>
-            <span>Status</span>
-            <span>Actions</span>
+            <span>Availability</span>
+            <span>Shop Status</span>
           </div>
 
-          {filteredRows.map((row) => (
-            <div key={`${row.product}-${row.shop}`} className="admin-reporting-row">
-              <div className="admin-reporting-name-cell">{row.product}</div>
-              <div>{row.shop}</div>
-              <div>{row.price}</div>
-              <div>{row.stock}</div>
-              <div>
-                <span className={statusClassName[row.status]}>{row.status}</span>
-              </div>
-              <div>
-                <button type="button" className="admin-reporting-toggle-btn" onClick={() => toggleListingStatus(row.product)}>
-                  {row.status === 'Active' ? 'Archive' : 'Restore'}
-                </button>
-              </div>
+          {isLoading ? (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}>
+              <div className="spinner spinner-teal"></div>
             </div>
-          ))}
+          ) : filteredRows.length > 0 ? (
+            filteredRows.map((row) => (
+              <div key={row._id} className="admin-reporting-row">
+                <div className="admin-reporting-name-cell">
+                  {row.product?.name || 'Deleted Product'}
+                  <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                    {row.product?.category} • {row.product?.unit}
+                  </div>
+                </div>
+                <div>{row.shop?.shopName || 'Unknown Shop'}</div>
+                <div style={{ fontWeight: 600, color: 'var(--color-primary)' }}>
+                  ${row.price?.toFixed(2)}
+                </div>
+                <div>
+                  <span className={statusClassName[row.stockStatus] || 'listing-status'}>
+                    {row.stockStatus}
+                  </span>
+                </div>
+                <div>
+                  <span
+                    className={
+                      row.shop?.status === 'Approved'
+                        ? 'vendor-status active'
+                        : 'vendor-status suspended'
+                    }
+                  >
+                    {row.shop?.status || 'Pending'}
+                  </span>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+              No product listings submitted to MongoDB yet.
+            </div>
+          )}
         </div>
       </section>
     </div>

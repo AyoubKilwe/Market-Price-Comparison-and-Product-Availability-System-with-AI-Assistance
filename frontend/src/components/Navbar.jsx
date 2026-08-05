@@ -1,6 +1,9 @@
 import React from 'react';
 
 export default function Navbar({ user, onSignOut, onViewChange }) {
+  const isVendor = user?.role?.toLowerCase() === 'vendor';
+  const isAdmin = user?.role?.toLowerCase() === 'admin';
+
   return (
     <header className="navbar">
       <div className="nav-brand" onClick={() => onViewChange('landing')}>
@@ -25,14 +28,29 @@ export default function Navbar({ user, onSignOut, onViewChange }) {
 
       <nav className="nav-links">
         <span className="nav-link" onClick={() => onViewChange('landing')}>Comparison</span>
-        <span className="nav-link" onClick={() => onViewChange('landing')}>Shops</span>
-        <span className="nav-link" onClick={() => onViewChange('landing')}>Trends</span>
+        <span className="nav-link" onClick={() => onViewChange('shop-catalog')}>Shops</span>
+        {isVendor && (
+          <span className="nav-link" onClick={() => onViewChange('vendor-profile')}>
+            Vendor Dashboard
+          </span>
+        )}
+        {isAdmin && (
+          <span className="nav-link" onClick={() => onViewChange('admin-product')}>
+            Admin Dashboard
+          </span>
+        )}
       </nav>
 
       <div className="nav-actions">
         {user ? (
           <>
-            <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-secondary)' }}>
+            <span
+              style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-secondary)', cursor: 'pointer' }}
+              onClick={() => {
+                if (isVendor) onViewChange('vendor-profile');
+                if (isAdmin) onViewChange('admin-product');
+              }}
+            >
               {user.name} ({user.role})
             </span>
             <button className="btn btn-outline" onClick={onSignOut}>

@@ -1,10 +1,12 @@
 const express = require('express');
-const { body } = require('express-validator');
-const { getMe, login, registerVendor } = require('../controllers/authController');
+const { body, param } = require('express-validator');
+const { getAllVendors, getMe, login, registerVendor, updateVendorStatus } = require('../controllers/authController');
 const protect = require('../middleware/authMiddleware');
+const authorize = require('../middleware/roleMiddleware');
 const validate = require('../middleware/validateMiddleware');
 
 const router = express.Router();
+const adminRouter = express.Router();
 
 router.post(
   '/register',
@@ -28,4 +30,17 @@ router.post(
 );
 router.get('/me', protect, getMe);
 
-module.exports = router;
+adminRouter.get('/vendors', protect, authorize('Admin'), getAllVendors);
+adminRouter.patch(
+  '/vendors/:id/status',
+  protect,
+  authorize('Admin'),
+  [
+    param('id').isMongoId().withMessage('A valid vendor ID is required'),
+    body('status').isIn(['Active', 'Suspended']).withMessage('Invalid status'),
+  ],
+  validate,
+  updateVendorStatus
+);
+
+module.exports = { adminRouter, router };

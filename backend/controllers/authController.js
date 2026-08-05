@@ -79,4 +79,43 @@ const getMe = asyncHandler(async (req, res) => {
   return res.status(200).json({ user: req.user.toJSON() });
 });
 
-module.exports = { getMe, login, registerVendor };
+const getAllVendors = asyncHandler(async (req, res) => {
+  const vendors = await User.find({ role: 'Vendor' }).select('-password').sort({ createdAt: -1 });
+  const Shop = require('../models/Shop');
+  const vendorIds = vendors.map((v) => v._id);
+  const shops = await Shop.find({ vendor: { $in: vendorIds } });
+
+  const shopMap = {};
+  shops.forEach((shop) => {
+    shopMap[shop.vendor.toString()] = shop;
+  });
+
+  const vendorData = vendors.map((v) => ({
+    ...v.toJSON(),
+    shop: shopMap[v._id.toString()] || null,
+  }));
+
+  return res.status(200).json({ vendors: vendorData });
+});
+
+const updateVendorStatus = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+
+  if (!['Active', 'Suspended'].includes(status)) {
+    return res.status(400).json({ message: 'Invalid vendor status' });
+  }
+
+  const vendor = await User.findByIdAndUpdate(
+    id,
+    { status },
+    { new: true, runValidators: true }
+  ).select('-password');
+
+  if (!vendor) return res.status(404).json({ message: 'Vendor not found' });
+
+  return res.status(200).json({ vendor });
+});
+
+module.exports = { getAllVendors, getMe, login, registerVendor, updateVendorStatus };
+

@@ -10,32 +10,41 @@ import VendorProductListingPage from './pages/VendorProductListingPage';
 import AdminApprovalPage from './pages/AdminApprovalPage';
 import AdminProductManagementPage from './pages/AdminProductManagementPage';
 import AdminVendorManagementPage from './pages/AdminVendorManagementPage';
+import AdminShopManagementPage from './pages/AdminShopManagementPage';
+import AdminListingsOverviewPage from './pages/AdminListingsOverviewPage';
 import AdminReportingPage from './pages/AdminReportingPage';
 import ShopCatalogPage from './pages/ShopCatalogPage';
 
 export default function App() {
-  const [view, setView] = useState('landing'); // 'landing' | 'login' | 'register' | 'vendor-profile' | 'vendor-listing' | 'admin-approval' | 'admin-product' | 'admin-vendor' | 'admin-reporting' | 'shop-catalog'
+  const [view, setView] = useState('landing');
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
 
-  // Restore session from localStorage if remembered
+  // Restore session from localStorage
   useEffect(() => {
     const savedToken = localStorage.getItem('marketeye_token');
     const savedUser = localStorage.getItem('marketeye_user');
     if (savedToken && savedUser) {
-      setToken(savedToken);
-      setUser(JSON.parse(savedUser));
+      try {
+        setToken(savedToken);
+        setUser(JSON.parse(savedUser));
+      } catch (err) {
+        localStorage.removeItem('marketeye_token');
+        localStorage.removeItem('marketeye_user');
+      }
     }
   }, []);
 
   const handleLoginSuccess = (userData, userToken) => {
+    localStorage.setItem('marketeye_token', userToken);
+    localStorage.setItem('marketeye_user', JSON.stringify(userData));
     setUser(userData);
     setToken(userToken);
 
     const normalizedRole = userData?.role?.toLowerCase();
 
     if (normalizedRole === 'vendor') {
-      setView('vendor-listing');
+      setView('vendor-profile');
     } else if (normalizedRole === 'admin') {
       setView('admin-product');
     } else {
@@ -71,12 +80,16 @@ export default function App() {
         {view === 'vendor-profile' && (
           <VendorShopProfilePage user={user} onViewChange={setView} />
         )}
+
         {view === 'vendor-listing' && (
           <VendorProductListingPage user={user} onViewChange={setView} />
         )}
+
         {view === 'admin-approval' && <AdminApprovalPage onViewChange={setView} />}
         {view === 'admin-product' && <AdminProductManagementPage onViewChange={setView} />}
         {view === 'admin-vendor' && <AdminVendorManagementPage onViewChange={setView} />}
+        {view === 'admin-shop' && <AdminShopManagementPage onViewChange={setView} />}
+        {view === 'admin-listings' && <AdminListingsOverviewPage onViewChange={setView} />}
         {view === 'admin-reporting' && <AdminReportingPage onViewChange={setView} />}
         {view === 'shop-catalog' && <ShopCatalogPage />}
       </main>

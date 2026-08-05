@@ -1,46 +1,20 @@
-import React, { useMemo, useState } from 'react';
-
-const catalogItems = [
-  {
-    name: 'Premium Basmati Rice 5kg',
-    category: 'Staples & Grains',
-    unit: '5kg',
-    price: '$16.14',
-    status: 'Active',
-  },
-  {
-    name: 'Organic Whole Milk 1L',
-    category: 'Dairy & Eggs',
-    unit: '1L',
-    price: '$4.99',
-    status: 'Active',
-  },
-  {
-    name: 'Pure Cane Sugar 2kg',
-    category: 'Pantry',
-    unit: '2kg',
-    price: '$2.88',
-    status: 'Archived',
-  },
-  {
-    name: 'Extra Virgin Olive Oil 500ml',
-    category: 'Pantry',
-    unit: '500ml',
-    price: '$11.00',
-    status: 'Active',
-  },
-];
+import React, { useEffect, useMemo, useState } from 'react';
+import { api } from '../services/api';
 
 const navItems = [
   { label: 'Overview', icon: '▦' },
   { label: 'Products', icon: '▣', active: true },
   { label: 'Approvals', icon: '✓' },
   { label: 'Vendors', icon: '◫' },
+  { label: 'Shops', icon: '🏪' },
+  { label: 'Listings', icon: '🧾' },
+  { label: 'Reporting', icon: '📊' },
   { label: 'Settings', icon: '⚙' },
 ];
 
 const statusClassName = {
   Active: 'catalog-status active',
+  Inactive: 'catalog-status archived',
   Archived: 'catalog-status archived',
 };
 
@@ -51,11 +25,30 @@ export default function AdminProductManagementPage({ onViewChange }) {
     name: '',
     category: 'Staples & Grains',
     unit: '5kg',
-    price: '0.00',
+    image: '',
   });
-  const [items, setItems] = useState(catalogItems);
-  const [editingIndex, setEditingIndex] = useState(null);
+  const [items, setItems] = useState([]);
+  const [editingId, setEditingId] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [notice, setNotice] = useState('');
+
+  // Fetch official products from MongoDB
+  const fetchProducts = async () => {
+    setIsLoading(true);
+    try {
+      const data = await api.get('/api/products');
+      setItems(data.products || []);
+    } catch (error) {
+      setNotice(error.message || 'Failed to load products from database.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
 
   const filteredItems = useMemo(() => {
     const q = searchTerm.trim().toLowerCase();
@@ -71,63 +64,77 @@ export default function AdminProductManagementPage({ onViewChange }) {
   };
 
   const resetForm = () => {
-    setEditingIndex(null);
-    setFormState({ name: '', category: 'Staples & Grains', unit: '5kg', price: '0.00' });
+    setEditingId(null);
+    setFormState({ name: '', category: 'Staples & Grains', unit: '5kg', image: '' });
   };
 
-  const saveCatalogItem = () => {
-    if (!formState.name.trim()) {
-      setNotice('Please provide an official product name.');
+  const saveCatalogItem = async (e) => {
+    if (e) e.preventDefault();
+    if (!formState.name.trim() || !formState.category.trim() || !formState.unit.trim()) {
+      setNotice('Please provide a Product Name, Category, and Unit.');
       return;
     }
 
-    const normalizedProduct = {
-      name: formState.name.trim(),
-      category: formState.category,
-      unit: formState.unit.trim(),
-      price: `$${Number(formState.price || 0).toFixed(2)}`,
-      status: 'Active',
-    };
+    setIsSaving(true);
+    setNotice('');
 
-    if (editingIndex !== null) {
-      setItems((current) =>
-        current.map((item, index) => (index === editingIndex ? { ...normalizedProduct } : item))
-      );
-      setNotice('Official product updated in the shared catalog.');
-    } else {
-      setItems((current) => [normalizedProduct, ...current]);
-      setNotice('Official product added to the shared catalog.');
+    try {
+      const payload = {
+        name: formState.name.trim(),
+        category: formState.category,
+        unit: formState.unit.trim(),
+        image: formState.image.trim(),
+      };
+
+      if (editingId) {
+        await api.put(`/api/products/${editingId}`, payload);
+        setNotice('Official product updated in MongoDB.');
+      } else {
+        await api.post('/api/products', payload);
+        setNotice('Official product created in MongoDB.');
+      }
+
+      resetForm();
+      await fetchProducts();
+    } catch (error) {
+      setNotice(error.message || 'Failed to save product.');
+    } finally {
+      setIsSaving(false);
     }
-
-    resetForm();
   };
 
-  const startEditingProduct = (item, index) => {
-    setEditingIndex(index);
+  const startEditingProduct = (item) => {
+    setEditingId(item._id);
     setFormState({
       name: item.name,
       category: item.category,
       unit: item.unit,
-      price: item.price.replace('$', ''),
+      image: item.image || '',
     });
-    setNotice(`Editing ${item.name}. Update the product and save again.`);
+    setNotice(`Editing "${item.name}". Update the fields and click Update Product.`);
   };
 
-  const deleteCatalogItem = (productName) => {
-    setItems((current) => current.filter((item) => item.name !== productName));
-    setNotice('Official product removed from the catalog.');
-    if (editingIndex !== null) resetForm();
+  const deleteCatalogItem = async (product) => {
+    if (!window.confirm(`Are you sure you want to delete or deactivate "${product.name}"?`)) return;
+
+    try {
+      const res = await api.delete(`/api/products/${product._id}`);
+      setNotice(res.message || 'Product deleted from MongoDB.');
+      if (editingId === product._id) resetForm();
+      await fetchProducts();
+    } catch (error) {
+      setNotice(error.message || 'Failed to delete product.');
+    }
   };
 
-  const toggleCatalogStatus = (productName) => {
-    setItems((current) =>
-      current.map((item) =>
-        item.name === productName
-          ? { ...item, status: item.status === 'Active' ? 'Archived' : 'Active' }
-          : item
-      )
-    );
-    setNotice('Official product status updated.');
+  const handleNavigate = (label) => {
+    setActiveItem(label);
+    if (label === 'Products') onViewChange?.('admin-product');
+    if (label === 'Approvals') onViewChange?.('admin-approval');
+    if (label === 'Vendors') onViewChange?.('admin-vendor');
+    if (label === 'Shops') onViewChange?.('admin-shop');
+    if (label === 'Listings') onViewChange?.('admin-listings');
+    if (label === 'Overview' || label === 'Reporting' || label === 'Settings') onViewChange?.('admin-reporting');
   };
 
   return (
@@ -149,13 +156,7 @@ export default function AdminProductManagementPage({ onViewChange }) {
               key={item.label}
               type="button"
               className={`admin-product-nav-item ${activeItem === item.label ? 'active' : ''}`}
-              onClick={() => {
-                setActiveItem(item.label);
-                if (item.label === 'Products') onViewChange?.('admin-product');
-                if (item.label === 'Approvals') onViewChange?.('admin-approval');
-                if (item.label === 'Vendors') onViewChange?.('admin-vendor');
-                if (item.label === 'Overview' || item.label === 'Settings') onViewChange?.('admin-reporting');
-              }}
+              onClick={() => handleNavigate(item.label)}
             >
               <span className="admin-product-nav-icon">{item.icon}</span>
               <span>{item.label}</span>
@@ -163,7 +164,14 @@ export default function AdminProductManagementPage({ onViewChange }) {
           ))}
         </nav>
 
-        <button type="button" className="admin-product-add-btn">
+        <button
+          type="button"
+          className="admin-product-add-btn"
+          onClick={() => {
+            resetForm();
+            setNotice('Fill out product details to create a new official product.');
+          }}
+        >
           + New Catalog Item
         </button>
       </aside>
@@ -172,7 +180,7 @@ export default function AdminProductManagementPage({ onViewChange }) {
         <div className="admin-product-header-row">
           <div>
             <h1>Official Product Management</h1>
-            <p>Create, update, and maintain the shared product catalog every approved shop uses.</p>
+            <p>Create, update, and maintain the official product catalog in MongoDB.</p>
           </div>
 
           <div className="admin-product-searchbox">
@@ -181,87 +189,139 @@ export default function AdminProductManagementPage({ onViewChange }) {
               type="text"
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder="Search catalog"
+              placeholder="Search catalog..."
             />
           </div>
         </div>
 
         <div className="admin-product-grid">
-          <div className="admin-product-card">
-            <div className="admin-product-card-title">Create Product</div>
+          <form onSubmit={saveCatalogItem} className="admin-product-card">
+            <div className="admin-product-card-title">{editingId ? 'Edit Product' : 'Create Official Product'}</div>
 
             <label className="admin-product-field">
-              <span>Product Name</span>
-              <input value={formState.name} onChange={updateForm('name')} placeholder="e.g. Premium Basmati Rice" />
+              <span>Product Name *</span>
+              <input
+                type="text"
+                value={formState.name}
+                onChange={updateForm('name')}
+                placeholder="e.g. Premium Basmati Rice 5kg"
+                required
+              />
             </label>
 
             <label className="admin-product-field">
-              <span>Category</span>
+              <span>Category *</span>
               <select value={formState.category} onChange={updateForm('category')}>
                 <option>Staples & Grains</option>
                 <option>Dairy & Eggs</option>
                 <option>Pantry</option>
+                <option>Beverages</option>
                 <option>Electronics</option>
+                <option>Fresh Produce</option>
               </select>
             </label>
 
             <label className="admin-product-field">
-              <span>Unit</span>
-              <input value={formState.unit} onChange={updateForm('unit')} placeholder="e.g. 5kg" />
+              <span>Unit / Package *</span>
+              <input
+                type="text"
+                value={formState.unit}
+                onChange={updateForm('unit')}
+                placeholder="e.g. 5kg, 1L, Dozen"
+                required
+              />
             </label>
 
             <label className="admin-product-field">
-              <span>Base Price</span>
-              <input value={formState.price} onChange={updateForm('price')} placeholder="0.00" />
+              <span>Image URL (Optional)</span>
+              <input
+                type="text"
+                value={formState.image}
+                onChange={updateForm('image')}
+                placeholder="https://..."
+              />
             </label>
 
-            <button type="button" className="admin-product-save-btn" onClick={saveCatalogItem}>
-              {editingIndex !== null ? 'Update Product' : 'Save Product'}
+            <button type="submit" className="admin-product-save-btn" disabled={isSaving}>
+              {isSaving ? 'Saving...' : editingId ? 'Update Product' : 'Save Official Product'}
             </button>
 
-            {editingIndex !== null && (
-              <button type="button" className="admin-product-clear-btn" onClick={resetForm}>
+            {editingId && (
+              <button
+                type="button"
+                className="admin-product-clear-btn"
+                onClick={resetForm}
+                style={{ marginTop: '8px' }}
+              >
                 Cancel Edit
               </button>
             )}
 
-            {notice && <div className="admin-product-notice">{notice}</div>}
-          </div>
+            {notice && (
+              <div
+                className="admin-product-notice"
+                style={{
+                  marginTop: '12px',
+                  padding: '10px',
+                  borderRadius: '6px',
+                  backgroundColor: notice.includes('Failed') || notice.includes('Please') ? '#fef2f2' : '#f0fdf4',
+                  color: notice.includes('Failed') || notice.includes('Please') ? '#dc2626' : '#166534',
+                }}
+              >
+                {notice}
+              </div>
+            )}
+          </form>
 
           <div className="admin-product-card admin-product-table-card">
-            <div className="admin-product-card-title">Catalog Overview</div>
+            <div className="admin-product-card-title">Database Catalog ({items.length})</div>
 
             <div className="admin-product-table-head">
-              <span>Product</span>
+              <span>Product Name</span>
               <span>Category</span>
               <span>Unit</span>
-              <span>Price</span>
               <span>Status</span>
               <span>Actions</span>
             </div>
 
-            {filteredItems.map((item, index) => (
-              <div key={`${item.name}-${index}`} className="admin-product-row">
-                <div className="admin-product-name-cell">{item.name}</div>
-                <div>{item.category}</div>
-                <div>{item.unit}</div>
-                <div className="admin-product-price-cell">{item.price}</div>
-                <div>
-                  <span className={statusClassName[item.status]}>{item.status}</span>
-                </div>
-                <div className="admin-product-actions">
-                  <button type="button" className="admin-product-action-btn edit" onClick={() => startEditingProduct(item, index)}>
-                    Edit
-                  </button>
-                  <button type="button" className="admin-product-action-btn archive" onClick={() => toggleCatalogStatus(item.name)}>
-                    {item.status === 'Active' ? 'Archive' : 'Restore'}
-                  </button>
-                  <button type="button" className="admin-product-action-btn delete" onClick={() => deleteCatalogItem(item.name)}>
-                    Delete
-                  </button>
-                </div>
+            {isLoading ? (
+              <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}>
+                <div className="spinner spinner-teal"></div>
               </div>
-            ))}
+            ) : filteredItems.length > 0 ? (
+              filteredItems.map((item) => (
+                <div key={item._id} className="admin-product-row">
+                  <div className="admin-product-name-cell">{item.name}</div>
+                  <div>{item.category}</div>
+                  <div>{item.unit}</div>
+                  <div>
+                    <span className={statusClassName[item.status] || 'catalog-status active'}>
+                      {item.status || 'Active'}
+                    </span>
+                  </div>
+                  <div className="admin-product-actions">
+                    <button
+                      type="button"
+                      className="admin-product-action-btn edit"
+                      onClick={() => startEditingProduct(item)}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      className="admin-product-action-btn delete"
+                      onClick={() => deleteCatalogItem(item)}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                No products found in MongoDB. Use the form on the left to add the first official product!
+              </div>
+            )}
           </div>
         </div>
       </section>

@@ -1,48 +1,78 @@
-import React, { useMemo, useState } from 'react';
-
-const shopProducts = [
-  {
-    name: 'Sony WH-1000XM5 Wireless Noise…',
-    category: 'Electronics',
-    price: 348,
-    badge: 'In Stock',
-    image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=500&q=80',
-  },
-  {
-    name: 'Echo Studio - High-fidelity smart speak…',
-    category: 'Smart Home',
-    price: 159,
-    badge: 'Low Stock',
-    image: 'https://images.unsplash.com/photo-1543512214-1265f6d7f9fa?auto=format&fit=crop&w=500&q=80',
-  },
-  {
-    name: 'YETI Rambler 20 oz Tumbler, Stainless…',
-    category: 'Home Goods',
-    price: 35,
-    badge: 'In Stock',
-    image: 'https://images.unsplash.com/photo-1517705008128-361805f42e86?auto=format&fit=crop&w=500&q=80',
-  },
-  {
-    name: 'Keychron K2 Wireless Mechanical Keyboard',
-    category: 'Accessories',
-    price: 79,
-    badge: 'Out of Stock',
-    image: 'https://images.unsplash.com/photo-1511467687858-23d96c32e4ae?auto=format&fit=crop&w=500&q=80',
-  },
-];
+import React, { useEffect, useMemo, useState } from 'react';
+import { api } from '../services/api';
 
 export default function ShopCatalogPage() {
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
-  const [products] = useState(shopProducts);
+  const [shops, setShops] = useState([]);
+  const [selectedShop, setSelectedShop] = useState(null);
+  const [listings, setListings] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const visibleProducts = useMemo(() => {
-    if (selectedCategory === 'All Categories') return products;
-    return products.filter((product) => product.category === selectedCategory);
-  }, [products, selectedCategory]);
+  // Fetch approved shops from MongoDB
+  useEffect(() => {
+    const fetchApprovedShops = async () => {
+      setIsLoading(true);
+      try {
+        const data = await api.get('/api/shops');
+        const list = data.shops || [];
+        setShops(list);
+        if (list.length > 0) {
+          fetchShopDetails(list[0]._id);
+        }
+      } catch (error) {
+        console.error('Failed to load approved shops:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchApprovedShops();
+  }, []);
+
+  const fetchShopDetails = async (shopId) => {
+    try {
+      const data = await api.get(`/api/shops/${shopId}`);
+      setSelectedShop(data.shop);
+      setListings(data.listings || []);
+    } catch (error) {
+      console.error('Failed to load shop details:', error);
+    }
+  };
+
+  const categories = useMemo(() => {
+    const set = new Set(['All Categories']);
+    listings.forEach((item) => {
+      if (item.product?.category) set.add(item.product.category);
+    });
+    return Array.from(set);
+  }, [listings]);
+
+  const visibleListings = useMemo(() => {
+    if (selectedCategory === 'All Categories') return listings;
+    return listings.filter((item) => item.product?.category === selectedCategory);
+  }, [listings, selectedCategory]);
 
   return (
     <div className="shop-catalog-layout">
       <aside className="shop-catalog-sidepanel">
+        {shops.length > 1 && (
+          <div style={{ marginBottom: '16px' }}>
+            <label style={{ fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', color: 'var(--text-secondary)' }}>
+              Select Approved Shop
+            </label>
+            <select
+              style={{ width: '100%', padding: '8px', borderRadius: '6px', marginTop: '6px', border: '1px solid var(--color-border)' }}
+              onChange={(e) => fetchShopDetails(e.target.value)}
+              value={selectedShop?._id || ''}
+            >
+              {shops.map((s) => (
+                <option key={s._id} value={s._id}>
+                  {s.shopName}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
         <div className="shop-catalog-shop-card">
           <div className="shop-catalog-shop-image-wrap">
             <img
@@ -52,80 +82,81 @@ export default function ShopCatalogPage() {
             />
           </div>
 
-          <h2>City Center Mart</h2>
-          <div className="shop-catalog-rating">★ 4.8 (124 reviews)</div>
+          <h2>{selectedShop?.shopName || 'Market Store'}</h2>
+          <div className="shop-catalog-rating">Approved Market Retailer</div>
 
-          <button type="button" className="shop-catalog-call-btn">
-            Call Shop
-          </button>
-
-          <button type="button" className="shop-catalog-outline-btn">
-            Get Directions
-          </button>
+          <a href={`tel:${selectedShop?.phone || ''}`} style={{ textDecoration: 'none' }}>
+            <button type="button" className="shop-catalog-call-btn">
+              Call Shop ({selectedShop?.phone || 'Contact'})
+            </button>
+          </a>
         </div>
 
         <div className="shop-catalog-info-card">
           <h3>About this shop</h3>
           <div className="shop-catalog-meta-row">
             <span className="shop-catalog-meta-label">ADDRESS</span>
-            <span>123 Market Street, Suite A Downtown District, 90210</span>
+            <span>{selectedShop?.address || 'Hargeisa Main Market'}</span>
           </div>
           <div className="shop-catalog-meta-row">
-            <span className="shop-catalog-meta-label">HOURS</span>
-            <div>
-              <div>Mon - Fri 9:00 AM - 8:00 PM</div>
-              <div>Saturday 10:00 AM - 6:00 PM</div>
-              <div>Sunday Closed</div>
-            </div>
+            <span className="shop-catalog-meta-label">STATUS</span>
+            <span>{selectedShop?.status || 'Approved'}</span>
           </div>
-        </div>
-
-        <div className="shop-catalog-map-card">
-          <div className="shop-catalog-map-placeholder">Map Preview</div>
         </div>
       </aside>
 
       <section className="shop-catalog-main-panel">
         <div className="shop-catalog-topbar">
-          <div className="shop-catalog-title">Available Products (42)</div>
+          <div className="shop-catalog-title">
+            Available Products ({visibleListings.length})
+          </div>
           <div className="shop-catalog-controls">
             <select
               value={selectedCategory}
               onChange={(event) => setSelectedCategory(event.target.value)}
               className="shop-catalog-select"
             >
-              <option>All Categories</option>
-              <option>Electronics</option>
-              <option>Smart Home</option>
-              <option>Home Goods</option>
-              <option>Accessories</option>
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
             </select>
-            <button type="button" className="shop-catalog-filter-btn">≡</button>
           </div>
         </div>
 
-        <div className="shop-catalog-product-grid">
-          {visibleProducts.map((product) => (
-            <article key={product.name} className="shop-catalog-card">
-              <div className="shop-catalog-badge">
-                {product.badge}
-              </div>
-              <img src={product.image} alt={product.name} className="shop-catalog-product-image" />
-              <h4>{product.name}</h4>
-              <div className="shop-catalog-product-category">{product.category}</div>
-              <div className="shop-catalog-footer">
-                <div className="shop-catalog-price">${product.price.toFixed(2)}</div>
-                <button type="button" className="shop-catalog-plus-btn">+</button>
-              </div>
-            </article>
-          ))}
-        </div>
-
-        <div className="shop-catalog-load-more-row">
-          <button type="button" className="shop-catalog-load-more-btn">
-            Load More Products
-          </button>
-        </div>
+        {isLoading ? (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}>
+            <div className="spinner spinner-teal"></div>
+          </div>
+        ) : visibleListings.length > 0 ? (
+          <div className="shop-catalog-product-grid">
+            {visibleListings.map((item) => (
+              <article key={item._id} className="shop-catalog-card">
+                <div className="shop-catalog-badge">{item.stockStatus}</div>
+                <img
+                  src={
+                    item.product?.image ||
+                    'https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=500&q=80'
+                  }
+                  alt={item.product?.name}
+                  className="shop-catalog-product-image"
+                />
+                <h4>{item.product?.name}</h4>
+                <div className="shop-catalog-product-category">
+                  {item.product?.category} • {item.product?.unit}
+                </div>
+                <div className="shop-catalog-footer">
+                  <div className="shop-catalog-price">${item.price?.toFixed(2)}</div>
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+            No products listed for this shop yet.
+          </div>
+        )}
       </section>
     </div>
   );

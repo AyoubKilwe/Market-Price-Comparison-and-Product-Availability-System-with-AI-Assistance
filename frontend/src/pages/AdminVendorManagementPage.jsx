@@ -1,61 +1,79 @@
-import React, { useMemo, useState } from 'react';
-
-const vendorRows = [
-  {
-    vendor: 'Amina Hassan',
-    email: 'amina@freshmart.com',
-    phone: '252-63-123456',
-    shop: 'FreshMart Retail',
-    status: 'Active',
-  },
-  {
-    vendor: 'Yusuf Ali',
-    email: 'yusuf@citygrocer.com',
-    phone: '252-63-987654',
-    shop: 'CityGrocer Hub',
-    status: 'Pending',
-  },
-  {
-    vendor: 'Leyla Noor',
-    email: 'leyla@sommart.com',
-    phone: '252-63-456789',
-    shop: 'SomMart Plus',
-    status: 'Suspended',
-  },
-];
+import React, { useEffect, useMemo, useState } from 'react';
+import { api } from '../services/api';
 
 const navItems = [
   { label: 'Overview', icon: '▦' },
   { label: 'Products', icon: '▣' },
   { label: 'Approvals', icon: '✓' },
   { label: 'Vendors', icon: '◫', active: true },
+  { label: 'Shops', icon: '🏪' },
+  { label: 'Listings', icon: '🧾' },
+  { label: 'Reporting', icon: '📊' },
   { label: 'Settings', icon: '⚙' },
 ];
 
 const statusClassName = {
   Active: 'vendor-status active',
-  Pending: 'vendor-status pending',
   Suspended: 'vendor-status suspended',
 };
 
 export default function AdminVendorManagementPage({ onViewChange }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeItem, setActiveItem] = useState('Vendors');
-  const [rows, setRows] = useState(vendorRows);
+  const [rows, setRows] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [notice, setNotice] = useState('');
+
+  // Fetch vendors from MongoDB
+  const fetchVendors = async () => {
+    setIsLoading(true);
+    try {
+      const data = await api.get('/api/admin/vendors');
+      setRows(data.vendors || []);
+    } catch (error) {
+      setNotice(error.message || 'Failed to fetch vendor accounts from database.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchVendors();
+  }, []);
 
   const filteredRows = useMemo(() => {
     const q = searchTerm.trim().toLowerCase();
     if (!q) return rows;
 
-    return rows.filter((row) =>
-      [row.vendor, row.email, row.phone, row.shop, row.status].join(' ').toLowerCase().includes(q)
-    );
+    return rows.filter((row) => {
+      const shopName = row.shop?.shopName || '';
+      return [row.name, row.email, row.phone, shopName, row.status]
+        .join(' ')
+        .toLowerCase()
+        .includes(q);
+    });
   }, [rows, searchTerm]);
 
-  const toggleStatus = (vendor, nextStatus) => {
-    setRows((current) =>
-      current.map((row) => (row.vendor === vendor ? { ...row, status: nextStatus } : row))
-    );
+  const toggleVendorStatus = async (vendorId, vendorName, nextStatus) => {
+    try {
+      await api.patch(`/api/admin/vendors/${vendorId}/status`, { status: nextStatus });
+      setNotice(`Vendor account "${vendorName}" status changed to ${nextStatus}.`);
+      setRows((current) =>
+        current.map((row) => (row._id === vendorId ? { ...row, status: nextStatus } : row))
+      );
+    } catch (error) {
+      setNotice(error.message || 'Failed to update vendor account status.');
+    }
+  };
+
+  const handleNavigate = (label) => {
+    setActiveItem(label);
+    if (label === 'Products') onViewChange?.('admin-product');
+    if (label === 'Approvals') onViewChange?.('admin-approval');
+    if (label === 'Vendors') onViewChange?.('admin-vendor');
+    if (label === 'Shops') onViewChange?.('admin-shop');
+    if (label === 'Listings') onViewChange?.('admin-listings');
+    if (label === 'Overview' || label === 'Reporting' || label === 'Settings') onViewChange?.('admin-reporting');
   };
 
   return (
@@ -77,13 +95,7 @@ export default function AdminVendorManagementPage({ onViewChange }) {
               key={item.label}
               type="button"
               className={`admin-vendor-nav-item ${activeItem === item.label ? 'active' : ''}`}
-              onClick={() => {
-                setActiveItem(item.label);
-                if (item.label === 'Products') onViewChange?.('admin-product');
-                if (item.label === 'Approvals') onViewChange?.('admin-approval');
-                if (item.label === 'Vendors') onViewChange?.('admin-vendor');
-                if (item.label === 'Overview' || item.label === 'Settings') onViewChange?.('admin-reporting');
-              }}
+              onClick={() => handleNavigate(item.label)}
             >
               <span className="admin-vendor-nav-icon">{item.icon}</span>
               <span>{item.label}</span>
@@ -91,16 +103,16 @@ export default function AdminVendorManagementPage({ onViewChange }) {
           ))}
         </nav>
 
-        <button type="button" className="admin-vendor-add-btn">
-          + New Vendor
+        <button type="button" className="admin-vendor-add-btn" onClick={fetchVendors}>
+          ↻ Refresh Vendors
         </button>
       </aside>
 
       <section className="admin-vendor-content">
         <div className="admin-vendor-header-row">
           <div>
-            <h1>Vendor Management</h1>
-            <p>Track vendor accounts, monitor linked shops, and manage account statuses across the marketplace.</p>
+            <h1>Vendor Account Management</h1>
+            <p>Track vendor accounts in MongoDB, monitor linked storefronts, and manage status.</p>
           </div>
 
           <div className="admin-vendor-searchbox">
@@ -109,54 +121,92 @@ export default function AdminVendorManagementPage({ onViewChange }) {
               type="text"
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder="Search vendors"
+              placeholder="Search vendors..."
             />
           </div>
         </div>
 
+        {notice && (
+          <div
+            style={{
+              padding: '12px',
+              borderRadius: '8px',
+              backgroundColor: '#f0fdf4',
+              color: '#166534',
+              marginBottom: '16px',
+              fontSize: '14px',
+            }}
+          >
+            {notice}
+          </div>
+        )}
+
         <div className="admin-vendor-card">
           <div className="admin-vendor-table-head">
-            <span>Vendor</span>
-            <span>Shop</span>
-            <span>Contact</span>
-            <span>Status</span>
+            <span>Vendor Name & Email</span>
+            <span>Linked Shop</span>
+            <span>Phone</span>
+            <span>Account Status</span>
             <span>Actions</span>
           </div>
 
-          {filteredRows.map((row) => (
-            <div key={row.vendor} className="admin-vendor-row">
-              <div>
-                <div className="admin-vendor-main-text">{row.vendor}</div>
-                <div className="admin-vendor-secondary-text">{row.email}</div>
-              </div>
-
-              <div>
-                <div className="admin-vendor-main-text">{row.shop}</div>
-                <div className="admin-vendor-secondary-text">Linked storefront</div>
-              </div>
-
-              <div>
-                <div className="admin-vendor-main-text">{row.phone}</div>
-                <div className="admin-vendor-secondary-text">Primary contact</div>
-              </div>
-
-              <div>
-                <span className={statusClassName[row.status]}>{row.status}</span>
-              </div>
-
-              <div className="admin-vendor-actions">
-                <button type="button" className="admin-vendor-action-btn activate" onClick={() => toggleStatus(row.vendor, 'Active')}>
-                  Activate
-                </button>
-                <button type="button" className="admin-vendor-action-btn pending" onClick={() => toggleStatus(row.vendor, 'Pending')}>
-                  Pending
-                </button>
-                <button type="button" className="admin-vendor-action-btn suspend" onClick={() => toggleStatus(row.vendor, 'Suspended')}>
-                  Suspend
-                </button>
-              </div>
+          {isLoading ? (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}>
+              <div className="spinner spinner-teal"></div>
             </div>
-          ))}
+          ) : filteredRows.length > 0 ? (
+            filteredRows.map((row) => (
+              <div key={row._id} className="admin-vendor-row">
+                <div>
+                  <div className="admin-vendor-main-text">{row.name}</div>
+                  <div className="admin-vendor-secondary-text">{row.email}</div>
+                </div>
+
+                <div>
+                  <div className="admin-vendor-main-text">
+                    {row.shop?.shopName || 'No shop created yet'}
+                  </div>
+                  <div className="admin-vendor-secondary-text">
+                    {row.shop ? `Shop Status: ${row.shop.status}` : 'Pending Profile'}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="admin-vendor-main-text">{row.phone}</div>
+                  <div className="admin-vendor-secondary-text">Vendor contact</div>
+                </div>
+
+                <div>
+                  <span className={statusClassName[row.status] || 'vendor-status active'}>
+                    {row.status}
+                  </span>
+                </div>
+
+                <div className="admin-vendor-actions">
+                  <button
+                    type="button"
+                    className="admin-vendor-action-btn activate"
+                    onClick={() => toggleVendorStatus(row._id, row.name, 'Active')}
+                    disabled={row.status === 'Active'}
+                  >
+                    Activate
+                  </button>
+                  <button
+                    type="button"
+                    className="admin-vendor-action-btn suspend"
+                    onClick={() => toggleVendorStatus(row._id, row.name, 'Suspended')}
+                    disabled={row.status === 'Suspended'}
+                  >
+                    Suspend
+                  </button>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+              No vendor accounts registered in MongoDB yet.
+            </div>
+          )}
         </div>
       </section>
     </div>

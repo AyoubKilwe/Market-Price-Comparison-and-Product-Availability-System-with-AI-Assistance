@@ -1,39 +1,5 @@
-import React, { useMemo, useState } from 'react';
-
-const shopProfiles = [
-  {
-    shop: 'FreshMart Retail',
-    vendor: 'Amina Hassan',
-    email: 'amina@freshmart.com',
-    phone: '252-63-123456',
-    status: 'Approved',
-    visibility: 'Visible',
-  },
-  {
-    shop: 'CityGrocer Hub',
-    vendor: 'Yusuf Ali',
-    email: 'yusuf@citygrocer.com',
-    phone: '252-63-987654',
-    status: 'Pending',
-    visibility: 'Hidden',
-  },
-  {
-    shop: 'SomMart Plus',
-    vendor: 'Leyla Noor',
-    email: 'leyla@sommart.com',
-    phone: '252-63-456789',
-    status: 'Suspended',
-    visibility: 'Hidden',
-  },
-  {
-    shop: 'Nile Essentials',
-    vendor: 'Mohamed Jama',
-    email: 'mohamed@nile.co',
-    phone: '252-63-654321',
-    status: 'Approved',
-    visibility: 'Visible',
-  },
-];
+import React, { useEffect, useMemo, useState } from 'react';
+import { api } from '../services/api';
 
 const navItems = [
   { label: 'Overview', icon: '▦' },
@@ -49,52 +15,67 @@ const navItems = [
 const statusClassName = {
   Approved: 'vendor-status active',
   Pending: 'vendor-status pending',
+  Rejected: 'vendor-status suspended',
   Suspended: 'vendor-status suspended',
 };
 
 export default function AdminShopManagementPage({ onViewChange }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeItem, setActiveItem] = useState('Shops');
-  const [rows, setRows] = useState(shopProfiles);
+  const [rows, setRows] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [notice, setNotice] = useState('');
+
+  const fetchShops = async () => {
+    setIsLoading(true);
+    try {
+      const data = await api.get('/api/admin/shops');
+      setRows(data.shops || []);
+    } catch (error) {
+      setNotice(error.message || 'Failed to fetch shops.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchShops();
+  }, []);
 
   const filteredRows = useMemo(() => {
     const query = searchTerm.trim().toLowerCase();
     if (!query) return rows;
 
-    return rows.filter((row) =>
-      [row.shop, row.vendor, row.email, row.phone, row.status, row.visibility]
+    return rows.filter((row) => {
+      const vName = row.vendor?.name || '';
+      const vEmail = row.vendor?.email || '';
+      return [row.shopName, vName, vEmail, row.phone, row.status, row.address]
         .join(' ')
         .toLowerCase()
-        .includes(query)
-    );
+        .includes(query);
+    });
   }, [rows, searchTerm]);
 
-  const updateShopStatus = (shop, nextStatus) => {
-    setRows((current) =>
-      current.map((row) => (row.shop === shop ? { ...row, status: nextStatus } : row))
-    );
-  };
-
-  const toggleVisibility = (shop) => {
-    setRows((current) =>
-      current.map((row) =>
-        row.shop === shop
-          ? { ...row, visibility: row.visibility === 'Visible' ? 'Hidden' : 'Visible' }
-          : row
-      )
-    );
+  const updateShopStatus = async (shopId, shopName, nextStatus) => {
+    try {
+      await api.patch(`/api/shops/${shopId}/status`, { status: nextStatus });
+      setNotice(`Shop "${shopName}" status updated to ${nextStatus}.`);
+      setRows((current) =>
+        current.map((row) => (row._id === shopId ? { ...row, status: nextStatus } : row))
+      );
+    } catch (error) {
+      setNotice(error.message || 'Failed to update shop status.');
+    }
   };
 
   const handleNavigate = (label) => {
     setActiveItem(label);
-
     if (label === 'Products') return onViewChange?.('admin-product');
     if (label === 'Approvals') return onViewChange?.('admin-approval');
     if (label === 'Vendors') return onViewChange?.('admin-vendor');
     if (label === 'Shops') return onViewChange?.('admin-shop');
     if (label === 'Listings') return onViewChange?.('admin-listings');
-    if (label === 'Reporting') return onViewChange?.('admin-reporting');
-    if (label === 'Overview' || label === 'Settings') return onViewChange?.('admin-reporting');
+    if (label === 'Overview' || label === 'Reporting' || label === 'Settings') return onViewChange?.('admin-reporting');
   };
 
   return (
@@ -124,8 +105,8 @@ export default function AdminShopManagementPage({ onViewChange }) {
           ))}
         </nav>
 
-        <button type="button" className="admin-vendor-add-btn">
-          + New Shop Review
+        <button type="button" className="admin-vendor-add-btn" onClick={fetchShops}>
+          ↻ Refresh Shops
         </button>
       </aside>
 
@@ -133,7 +114,7 @@ export default function AdminShopManagementPage({ onViewChange }) {
         <div className="admin-vendor-header-row">
           <div>
             <h1>Shop Management</h1>
-            <p>Review shop profiles, status, and public visibility across the marketplace.</p>
+            <p>Review shop profiles, live database statuses, and public visibility across MarketEye.</p>
           </div>
 
           <div className="admin-vendor-searchbox">
@@ -142,14 +123,29 @@ export default function AdminShopManagementPage({ onViewChange }) {
               type="text"
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder="Search shops"
+              placeholder="Search shops..."
             />
           </div>
         </div>
 
+        {notice && (
+          <div
+            style={{
+              padding: '12px',
+              borderRadius: '8px',
+              backgroundColor: '#f0fdf4',
+              color: '#166534',
+              marginBottom: '16px',
+              fontSize: '14px',
+            }}
+          >
+            {notice}
+          </div>
+        )}
+
         <div className="admin-vendor-card">
           <div className="admin-vendor-table-head">
-            <span>Shop</span>
+            <span>Shop Name</span>
             <span>Vendor</span>
             <span>Contact</span>
             <span>Status</span>
@@ -157,49 +153,70 @@ export default function AdminShopManagementPage({ onViewChange }) {
             <span>Actions</span>
           </div>
 
-          {filteredRows.map((row) => (
-            <div key={row.shop} className="admin-vendor-row">
-              <div>
-                <div className="admin-vendor-main-text">{row.shop}</div>
-                <div className="admin-vendor-secondary-text">Linked storefront</div>
-              </div>
-
-              <div>
-                <div className="admin-vendor-main-text">{row.vendor}</div>
-                <div className="admin-vendor-secondary-text">{row.email}</div>
-              </div>
-
-              <div>
-                <div className="admin-vendor-main-text">{row.phone}</div>
-                <div className="admin-vendor-secondary-text">Primary contact</div>
-              </div>
-
-              <div>
-                <span className={statusClassName[row.status]}>{row.status}</span>
-              </div>
-
-              <div>
-                <span className={row.visibility === 'Visible' ? 'vendor-status active' : 'vendor-status suspended'}>
-                  {row.visibility}
-                </span>
-              </div>
-
-              <div className="admin-vendor-actions">
-                <button type="button" className="admin-vendor-action-btn activate" onClick={() => updateShopStatus(row.shop, 'Approved')}>
-                  Approve
-                </button>
-                <button type="button" className="admin-vendor-action-btn pending" onClick={() => updateShopStatus(row.shop, 'Pending')}>
-                  Pending
-                </button>
-                <button type="button" className="admin-vendor-action-btn suspend" onClick={() => updateShopStatus(row.shop, 'Suspended')}>
-                  Suspend
-                </button>
-                <button type="button" className="admin-vendor-action-btn activate" onClick={() => toggleVisibility(row.shop)}>
-                  {row.visibility === 'Visible' ? 'Hide' : 'Show'}
-                </button>
-              </div>
+          {isLoading ? (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}>
+              <div className="spinner spinner-teal"></div>
             </div>
-          ))}
+          ) : filteredRows.length > 0 ? (
+            filteredRows.map((row) => (
+              <div key={row._id} className="admin-vendor-row">
+                <div>
+                  <div className="admin-vendor-main-text">{row.shopName}</div>
+                  <div className="admin-vendor-secondary-text">{row.address || 'Storefront'}</div>
+                </div>
+
+                <div>
+                  <div className="admin-vendor-main-text">{row.vendor?.name || 'Vendor'}</div>
+                  <div className="admin-vendor-secondary-text">{row.vendor?.email}</div>
+                </div>
+
+                <div>
+                  <div className="admin-vendor-main-text">{row.phone}</div>
+                  <div className="admin-vendor-secondary-text">Shop Phone</div>
+                </div>
+
+                <div>
+                  <span className={statusClassName[row.status] || 'vendor-status pending'}>
+                    {row.status}
+                  </span>
+                </div>
+
+                <div>
+                  <span className={row.status === 'Approved' ? 'vendor-status active' : 'vendor-status suspended'}>
+                    {row.status === 'Approved' ? 'Visible' : 'Hidden'}
+                  </span>
+                </div>
+
+                <div className="admin-vendor-actions">
+                  <button
+                    type="button"
+                    className="admin-vendor-action-btn activate"
+                    onClick={() => updateShopStatus(row._id, row.shopName, 'Approved')}
+                  >
+                    Approve
+                  </button>
+                  <button
+                    type="button"
+                    className="admin-vendor-action-btn pending"
+                    onClick={() => updateShopStatus(row._id, row.shopName, 'Pending')}
+                  >
+                    Pending
+                  </button>
+                  <button
+                    type="button"
+                    className="admin-vendor-action-btn suspend"
+                    onClick={() => updateShopStatus(row._id, row.shopName, 'Suspended')}
+                  >
+                    Suspend
+                  </button>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+              No shop profiles found in MongoDB.
+            </div>
+          )}
         </div>
       </section>
     </div>
