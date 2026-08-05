@@ -5,7 +5,7 @@ const express = require('express');
 const { connectDB, disconnectDB } = require('./config/db');
 const { errorHandler, notFound } = require('./middleware/errorMiddleware');
 const aiRoutes = require('./routes/aiRoutes');
-const authRoutes = require('./routes/authRoutes');
+const { adminRouter: adminVendorRoutes, router: authRoutes } = require('./routes/authRoutes');
 const { adminRouter: adminListingRoutes, router: listingRoutes } = require('./routes/listingRoutes');
 const productRoutes = require('./routes/productRoutes');
 const { adminRouter: adminShopRoutes, router: shopRoutes } = require('./routes/shopRoutes');
@@ -13,11 +13,7 @@ const { adminRouter: adminShopRoutes, router: shopRoutes } = require('./routes/s
 const app = express();
 
 const getCorsOptions = () => {
-  const clientUrl = process.env.CLIENT_URL;
-
-  if (!clientUrl) {
-    throw new Error('CLIENT_URL is required');
-  }
+  const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
 
   return {
     origin: clientUrl,
@@ -33,8 +29,10 @@ app.use('/api/products', productRoutes);
 app.use('/api/shops', shopRoutes);
 app.use('/api/listings', listingRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/admin', adminVendorRoutes);
 app.use('/api/admin', adminShopRoutes);
 app.use('/api/admin', adminListingRoutes);
+
 
 app.use(notFound);
 app.use(errorHandler);

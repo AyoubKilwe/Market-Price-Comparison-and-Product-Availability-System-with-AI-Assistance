@@ -1,56 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import ProductCard from '../components/ProductCard';
+import { api } from '../services/api';
 
 export default function LandingPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
+  const [featuredProducts, setFeaturedProducts] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [selectedProductComparison, setSelectedProductComparison] = useState(null);
   const [isLoadingComparison, setIsLoadingComparison] = useState(false);
 
-  // Hardcoded mockup deals to match landing-page.png exactly on first render
-  const mockDeals = [
-    {
-      id: 'mock1',
-      name: 'Premium Basmati Rice',
-      unit: '5kg',
-      shopName: 'FreshMart',
-      badge: '-15% Drop',
-      originalPrice: 18.99,
-      price: 16.14,
-      image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=150&auto=format&fit=crop&q=60'
-    },
-    {
-      id: 'mock2',
-      name: 'Organic Whole Milk',
-      unit: '1 Gal',
-      shopName: 'CityGrocer',
-      badge: 'Best Value',
-      originalPrice: 5.50,
-      price: 4.99,
-      image: 'https://images.unsplash.com/photo-1550583724-b2692b85b150?w=150&auto=format&fit=crop&q=60'
-    },
-    {
-      id: 'mock3',
-      name: 'Pure Cane Sugar',
-      unit: '2kg',
-      shopName: 'ValueStore',
-      badge: '-10% Drop',
-      originalPrice: 3.20,
-      price: 2.88,
-      image: 'https://images.unsplash.com/photo-1581798459219-318e76aecc7b?w=150&auto=format&fit=crop&q=60'
-    },
-    {
-      id: 'mock4',
-      name: 'Extra Virgin Olive Oil',
-      unit: '500ml',
-      shopName: 'FreshMart',
-      badge: 'Trending',
-      originalPrice: 12.50,
-      price: 11.00,
-      image: 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=150&auto=format&fit=crop&q=60'
-    }
-  ];
+  // Fetch initial active products from MongoDB for home display
+  useEffect(() => {
+    const fetchInitial = async () => {
+      try {
+        const data = await api.get('/api/products');
+        if (data.products && data.products.length > 0) {
+          const formatted = data.products.map((p) => ({
+            id: p._id,
+            name: p.name,
+            unit: p.unit,
+            category: p.category,
+            image: p.image || '',
+          }));
+          setFeaturedProducts(formatted);
+        }
+      } catch (err) {
+        console.error('Failed to load initial products:', err);
+      }
+    };
+    fetchInitial();
+  }, []);
 
   // Perform search on backend API
   const handleSearch = async (queryText) => {
@@ -62,20 +42,15 @@ export default function LandingPage() {
 
     setIsSearching(true);
     try {
-      const res = await fetch(`/api/products?search=${encodeURIComponent(trimmed)}`);
-      if (res.ok) {
-        const data = await res.json();
-        // Map database products to the display format
-        const formatted = data.products.map(p => ({
-          id: p._id,
-          name: p.name,
-          unit: p.unit,
-          price: p.price || 0, // default placeholder
-          category: p.category,
-          image: p.image || ''
-        }));
-        setSearchResults(formatted);
-      }
+      const data = await api.get(`/api/products?search=${encodeURIComponent(trimmed)}`);
+      const formatted = (data.products || []).map((p) => ({
+        id: p._id,
+        name: p.name,
+        unit: p.unit,
+        category: p.category,
+        image: p.image || '',
+      }));
+      setSearchResults(formatted);
     } catch (err) {
       console.error('Failed to search products:', err);
     } finally {
@@ -85,46 +60,22 @@ export default function LandingPage() {
 
   // Perform comparison on backend API
   const handleCompareProduct = async (product) => {
-    // If it's a mock product, construct mock comparison data
-    if (product.id.startsWith('mock')) {
-      setSelectedProductComparison({
-        product: { name: product.name, unit: product.unit },
-        summary: { lowest: product.price, highest: product.price + 2, average: product.price + 0.9 },
-        listings: [
-          { shop: { shopName: product.shopName, phone: '252-63-444555', address: 'Main Street' }, price: product.price, stockStatus: 'In Stock' },
-          { shop: { shopName: 'Al-Baraka Store', phone: '252-63-123456', address: 'Jigjiga Yar' }, price: product.price + 1.2, stockStatus: 'Low Stock' },
-          { shop: { shopName: 'SomMart', phone: '252-63-789012', address: 'Downtown' }, price: product.price + 2.0, stockStatus: 'Out of Stock' }
-        ]
-      });
-      // Scroll to comparison section
+    setIsLoadingComparison(true);
+    try {
+      const data = await api.get(`/api/listings/product/${product.id}`);
+      setSelectedProductComparison(data);
       setTimeout(() => {
         document.getElementById('comparison-view')?.scrollIntoView({ behavior: 'smooth' });
       }, 100);
-      return;
-    }
-
-    setIsLoadingComparison(true);
-    try {
-      const res = await fetch(`/api/listings/product/${product.id}`);
-      if (res.ok) {
-        const data = await res.json();
-        setSelectedProductComparison(data);
-        setTimeout(() => {
-          document.getElementById('comparison-view')?.scrollIntoView({ behavior: 'smooth' });
-        }, 100);
-      } else {
-        // Fallback if product has no listings yet
-        setSelectedProductComparison({
-          product: { name: product.name, unit: product.unit },
-          summary: { lowest: null, highest: null, average: null },
-          listings: []
-        });
-        setTimeout(() => {
-          document.getElementById('comparison-view')?.scrollIntoView({ behavior: 'smooth' });
-        }, 100);
-      }
     } catch (err) {
-      console.error('Error fetching comparison:', err);
+      setSelectedProductComparison({
+        product: { name: product.name, unit: product.unit },
+        summary: { lowest: null, highest: null, average: null },
+        listings: [],
+      });
+      setTimeout(() => {
+        document.getElementById('comparison-view')?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
     } finally {
       setIsLoadingComparison(false);
     }
@@ -163,7 +114,6 @@ export default function LandingPage() {
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
-                // Trigger live search on change if character count > 2
                 if (e.target.value.length > 2) {
                   handleSearch(e.target.value);
                 } else if (e.target.value.length === 0) {
@@ -178,9 +128,33 @@ export default function LandingPage() {
 
           <div className="trending-list">
             <span>TRENDING:</span>
-            <span className="tag" onClick={() => { setSearchQuery('Rice'); handleSearch('Rice'); }}>Basmati Rice 5kg</span>
-            <span className="tag" onClick={() => { setSearchQuery('Milk'); handleSearch('Milk'); }}>Whole Milk 1L</span>
-            <span className="tag" onClick={() => { setSearchQuery('Sugar'); handleSearch('Sugar'); }}>Cane Sugar 2kg</span>
+            <span
+              className="tag"
+              onClick={() => {
+                setSearchQuery('Rice');
+                handleSearch('Rice');
+              }}
+            >
+              Basmati Rice
+            </span>
+            <span
+              className="tag"
+              onClick={() => {
+                setSearchQuery('Milk');
+                handleSearch('Milk');
+              }}
+            >
+              Milk
+            </span>
+            <span
+              className="tag"
+              onClick={() => {
+                setSearchQuery('Sugar');
+                handleSearch('Sugar');
+              }}
+            >
+              Sugar
+            </span>
           </div>
         </form>
       </section>
@@ -196,9 +170,9 @@ export default function LandingPage() {
         <section id="comparison-view" className="comparison-section">
           <div className="comparison-header">
             <div>
-              <h2 className="comparison-title">{selectedProductComparison.product.name}</h2>
+              <h2 className="comparison-title">{selectedProductComparison.product?.name}</h2>
               <p style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
-                Comparing prices per {selectedProductComparison.product.unit || 'unit'} across registered shops
+                Comparing prices per {selectedProductComparison.product?.unit || 'unit'} across registered shops
               </p>
             </div>
             <button
@@ -219,19 +193,19 @@ export default function LandingPage() {
                 <div className="summary-card cheapest-card">
                   <div className="summary-card-label">Cheapest Price</div>
                   <div className="summary-card-value">
-                    ${selectedProductComparison.summary.lowest?.toFixed(2)}
+                    ${selectedProductComparison.summary?.lowest?.toFixed(2)}
                   </div>
                 </div>
                 <div className="summary-card">
                   <div className="summary-card-label">Average Price</div>
                   <div className="summary-card-value">
-                    ${selectedProductComparison.summary.average?.toFixed(2)}
+                    ${selectedProductComparison.summary?.average?.toFixed(2)}
                   </div>
                 </div>
                 <div className="summary-card">
                   <div className="summary-card-label">Highest Price</div>
                   <div className="summary-card-value">
-                    ${selectedProductComparison.summary.highest?.toFixed(2)}
+                    ${selectedProductComparison.summary?.highest?.toFixed(2)}
                   </div>
                 </div>
               </div>
@@ -271,7 +245,7 @@ export default function LandingPage() {
                           </span>
                         </td>
                         <td>
-                          <span className="price-cell">${item.price.toFixed(2)}</span>
+                          <span className="price-cell">${item.price?.toFixed(2)}</span>
                         </td>
                       </tr>
                     ))}
@@ -281,7 +255,7 @@ export default function LandingPage() {
             </>
           ) : (
             <div className="no-results">
-              No active listings found for this product. Approved vendors have not posted stock yet.
+              No active shop listings found for this product. Approved vendors have not posted stock yet.
             </div>
           )}
         </section>
@@ -293,7 +267,7 @@ export default function LandingPage() {
           <div className="section-header">
             <div className="section-title-group">
               <h2>Search Results for "{searchQuery}"</h2>
-              <p>Found {searchResults.length} matching official products</p>
+              <p>Found {searchResults.length} matching official products in database</p>
             </div>
           </div>
 
@@ -306,47 +280,43 @@ export default function LandingPage() {
               {searchResults.map((product) => (
                 <ProductCard
                   key={product.id}
-                  product={{
-                    ...product,
-                    // calculate mock starting display price
-                    price: product.price || 4.5
-                  }}
+                  product={product}
                   onCompare={handleCompareProduct}
                 />
               ))}
             </div>
           ) : (
             <div className="no-results">
-              No products found. Try typing a generic word like "rice", "sugar", or "milk".
+              No products found in MongoDB matching "{searchQuery}". Try typing "rice", "milk", or "sugar".
             </div>
           )}
         </section>
       )}
 
-      {/* Top Deals Today Section (Default view when not searching) */}
+      {/* Top Products Section */}
       <section className="deals-section">
         <div className="section-header">
           <div className="section-title-group">
-            <h2>Top Deals Today</h2>
-            <p>The biggest price drops on essentials in Hargeisa.</p>
+            <h2>Official Market Products</h2>
+            <p>Real-time tracked products across registered vendors in Hargeisa.</p>
           </div>
-          <a href="#all-deals" className="view-all-link">
-            <span>View All Deals</span>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path d="M5 12h14M12 5l7 7-7 7" />
-            </svg>
-          </a>
         </div>
 
-        <div className="products-grid">
-          {mockDeals.map((deal) => (
-            <ProductCard
-              key={deal.id}
-              product={deal}
-              onCompare={handleCompareProduct}
-            />
-          ))}
-        </div>
+        {featuredProducts.length > 0 ? (
+          <div className="products-grid">
+            {featuredProducts.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                onCompare={handleCompareProduct}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="no-results">
+            No official products registered in database yet. Admin can create official products in the Admin Dashboard!
+          </div>
+        )}
       </section>
 
       {/* How it works Section */}
@@ -363,7 +333,7 @@ export default function LandingPage() {
               </div>
               <h3 className="step-title">1. Search</h3>
               <p className="step-description">
-                Type in any everyday essential. We scan thousands of local and online retailers instantly.
+                Type in any everyday essential. We scan approved local retailers instantly.
               </p>
             </div>
 
@@ -375,7 +345,7 @@ export default function LandingPage() {
               </div>
               <h3 className="step-title">2. Compare</h3>
               <p className="step-description">
-                View side-by-side price comparisons, historical trends, and availability metrics.
+                View side-by-side price comparisons and stock availability.
               </p>
             </div>
 
@@ -387,7 +357,7 @@ export default function LandingPage() {
               </div>
               <h3 className="step-title">3. Save</h3>
               <p className="step-description">
-                Choose the best deal, build your shopping list, and stop overpaying for groceries.
+                Choose the best deal, contact the shop, and stop overpaying for groceries.
               </p>
             </div>
           </div>

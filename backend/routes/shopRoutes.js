@@ -5,6 +5,7 @@ const {
   getAllShops,
   getApprovedShops,
   getMyShop,
+  getReportingStats,
   getShop,
   updateMyShop,
   updateShopStatus,
@@ -41,5 +42,7 @@ router.patch(
 router.get('/:id', param('id').isMongoId().withMessage('A valid shop ID is required'), validate, getShop);
 
 adminRouter.get('/shops', protect, authorize('Admin'), getAllShops);
+adminRouter.get('/reporting', protect, authorize('Admin'), getReportingStats);
 
 module.exports = { adminRouter, router };
+
