@@ -34,17 +34,7 @@ export default function AiAssistant() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/ai/ask', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question: questionText }),
-      });
-
-      if (!response.ok) {
-        throw new Error('AI Assistant is temporarily unavailable.');
-      }
-
-      const result = await response.json();
+      const result = await api.post('/api/ai/ask', { question: questionText });
 
       setMessages((prev) => [
         ...prev,
