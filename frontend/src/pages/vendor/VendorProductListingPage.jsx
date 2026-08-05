@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import vendorApi from './vendorApi';
 
 const navItems = [
@@ -13,7 +13,7 @@ const statusClassName = {
   'Out of Stock': 'listing-status out-of-stock',
 };
 
-export default function VendorProductListingPage({ user, onViewChange }) {
+export default function VendorProductListingPage({ user, onViewChange, onSignOut }) {
   const [catalogSearchTerm, setCatalogSearchTerm] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPrice, setCurrentPrice] = useState('');
@@ -70,7 +70,17 @@ export default function VendorProductListingPage({ user, onViewChange }) {
     });
   }, [listings, searchTerm]);
 
+  const listingsByProduct = useMemo(
+    () => new Map(listings.map((listing) => [listing.product?._id, listing])),
+    [listings]
+  );
+
   const handleSelectProduct = (product) => {
+    const existingListing = listingsByProduct.get(product._id);
+    if (existingListing) {
+      handleStartEdit(existingListing);
+      return;
+    }
     setSelectedProduct(product);
     setEditingListingId(null);
     setCurrentPrice('');
@@ -185,6 +195,9 @@ export default function VendorProductListingPage({ user, onViewChange }) {
               placeholder="Search your listings..."
             />
           </div>
+          <button type="button" className="admin-signout-btn" onClick={onSignOut}>
+            Sign out
+          </button>
         </div>
 
         {!shop && (
@@ -224,42 +237,43 @@ export default function VendorProductListingPage({ user, onViewChange }) {
           </div>
         )}
 
-        <div className="admin-product-grid">
+        <div className="vendor-listing-panes">
           {/* Left: Official Catalog Selector */}
-          <div className="admin-product-card">
-            <div className="admin-product-card-title">1. Select Official Product</div>
+          <div className="vendor-listing-card">
+            <div className="vendor-listing-card-title">
+              <span>1. Choose a Product</span>
+              <small>{filteredCatalog.length} products</small>
+            </div>
 
-            <div style={{ marginBottom: '12px' }}>
+            <div className="vendor-catalog-search">
+              <span>⌕</span>
               <input
                 type="text"
-                className="admin-product-field"
-                style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #e5e7eb' }}
-                placeholder="Search official catalog..."
+                placeholder="Search products or categories..."
                 value={catalogSearchTerm}
                 onChange={(e) => setCatalogSearchTerm(e.target.value)}
               />
             </div>
 
-            <div style={{ maxHeight: '350px', overflowY: 'auto', border: '1px solid #f0f0f0', borderRadius: '6px' }}>
+            <div className="vendor-catalog-list">
               {isLoading ? (
                 <div style={{ padding: '20px', textAlign: 'center' }}>Loading products...</div>
               ) : filteredCatalog.length > 0 ? (
                 filteredCatalog.map((prod) => (
-                  <div
+                  <button
+                    type="button"
                     key={prod._id}
                     onClick={() => handleSelectProduct(prod)}
-                    style={{
-                      padding: '10px 14px',
-                      borderBottom: '1px solid #f5f5f5',
-                      cursor: 'pointer',
-                      backgroundColor: selectedProduct?._id === prod._id ? '#e6f7ff' : 'transparent',
-                    }}
+                    className={`vendor-catalog-item ${selectedProduct?._id === prod._id ? 'selected' : ''}`}
                   >
-                    <div style={{ fontWeight: '600', fontSize: '14px' }}>{prod.name}</div>
+                    <div className="vendor-catalog-item-name">{prod.name}</div>
                     <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
                       Category: {prod.category} • Unit: {prod.unit}
                     </div>
-                  </div>
+                    <span className={`vendor-catalog-action ${listingsByProduct.has(prod._id) ? 'listed' : ''}`}>
+                      {listingsByProduct.has(prod._id) ? 'Edit' : 'Add'}
+                    </span>
+                  </button>
                 ))
               ) : (
                 <div style={{ padding: '16px', color: 'var(--text-secondary)' }}>No matching products.</div>
@@ -268,8 +282,8 @@ export default function VendorProductListingPage({ user, onViewChange }) {
           </div>
 
           {/* Right: Price & Stock Entry Form */}
-          <form onSubmit={handleSaveListing} className="admin-product-card">
-            <div className="admin-product-card-title">
+          <form onSubmit={handleSaveListing} className="vendor-listing-card vendor-price-card">
+            <div className="vendor-listing-card-title">
               2. {editingListingId ? 'Edit Price Listing' : 'Set Your Price'}
             </div>
 

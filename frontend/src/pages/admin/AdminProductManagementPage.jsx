@@ -16,12 +16,21 @@ const statusClassName = {
   Archived: 'catalog-status archived',
 };
 
+const productCategories = [
+  'Raashin',
+  'Sharaab',
+  'Khudaar iyo Miro',
+  'Hilib iyo Kalluun',
+  'Alaabta Guriga',
+];
+
 export default function AdminProductManagementPage({ onViewChange, onSignOut }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeItem, setActiveItem] = useState('Products');
   const [formState, setFormState] = useState({
     name: '',
-    category: 'Staples & Grains',
+    category: 'Raashin',
+    unit: '',
     image: '',
   });
   const [items, setItems] = useState([]);
@@ -62,7 +71,7 @@ export default function AdminProductManagementPage({ onViewChange, onSignOut }) 
 
   const resetForm = () => {
     setEditingId(null);
-    setFormState({ name: '', category: 'Staples & Grains', image: '' });
+    setFormState({ name: '', category: 'Raashin', unit: '', image: '' });
   };
 
   const saveCatalogItem = async (e) => {
@@ -79,6 +88,7 @@ export default function AdminProductManagementPage({ onViewChange, onSignOut }) 
       const payload = {
         name: formState.name.trim(),
         category: formState.category,
+        unit: formState.unit.trim() || '1 unit',
         image: formState.image.trim(),
       };
 
@@ -104,6 +114,7 @@ export default function AdminProductManagementPage({ onViewChange, onSignOut }) 
     setFormState({
       name: item.name,
       category: item.category,
+      unit: item.unit || '',
       image: item.image || '',
     });
     setNotice(`Editing "${item.name}".`);
@@ -224,18 +235,25 @@ export default function AdminProductManagementPage({ onViewChange, onSignOut }) 
             <label className="admin-product-field">
               <span>Category *</span>
               <select value={formState.category} onChange={updateForm('category')}>
-                <option>Staples & Grains</option>
-                <option>Dairy & Eggs</option>
-                <option>Pantry</option>
-                <option>Beverages</option>
-                <option>Electronics</option>
-                <option>Fresh Produce</option>
-                <option>Groceries</option>
-                <option>Clothing & Shoes</option>
-                <option>Home Appliances</option>
-                <option>Beauty & Cosmetics</option>
-                <option>Meat & Seafood</option>
+                {!productCategories.includes(formState.category) && formState.category && (
+                  <option value={formState.category}>{formState.category} (hore)</option>
+                )}
+                {productCategories.map((category) => (
+                  <option key={category} value={category}>{category}</option>
+                ))}
               </select>
+            </label>
+
+            <label className="admin-product-field">
+              <span>Unit / Size *</span>
+              <input
+                type="text"
+                value={formState.unit}
+                onChange={updateForm('unit')}
+                placeholder="e.g. 1kg, 5L, 12 pieces"
+                maxLength="50"
+                required
+              />
             </label>
 
             <label className="admin-product-field">

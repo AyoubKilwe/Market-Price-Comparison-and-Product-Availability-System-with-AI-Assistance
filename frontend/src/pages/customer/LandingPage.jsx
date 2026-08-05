@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import ProductCard from '../../components/ProductCard';
 import customerApi from './customerApi';
 
@@ -11,6 +11,19 @@ export default function LandingPage() {
   const [featuredDeals, setFeaturedDeals] = useState([]);
   const [isLoadingDeals, setIsLoadingDeals] = useState(true);
   const [dealsError, setDealsError] = useState('');
+  const [selectedDealCategory, setSelectedDealCategory] = useState('Dhammaan');
+
+  const dealCategories = useMemo(
+    () => ['Dhammaan', ...new Set(featuredDeals.map((deal) => deal.category).filter(Boolean))],
+    [featuredDeals]
+  );
+
+  const filteredFeaturedDeals = useMemo(
+    () => selectedDealCategory === 'Dhammaan'
+      ? featuredDeals
+      : featuredDeals.filter((deal) => deal.category === selectedDealCategory),
+    [featuredDeals, selectedDealCategory]
+  );
 
   useEffect(() => {
     const loadFeaturedDeals = async () => {
@@ -315,15 +328,30 @@ export default function LandingPage() {
           </a>
         </div>
 
+        {dealCategories.length > 1 && (
+          <div className="category-filter-bar" aria-label="Filter deals by category">
+            {dealCategories.map((category) => (
+              <button
+                key={category}
+                type="button"
+                className={`category-filter-btn ${selectedDealCategory === category ? 'active' : ''}`}
+                onClick={() => setSelectedDealCategory(category)}
+              >
+                {category}
+              </button>
+            ))}
+          </div>
+        )}
+
         {isLoadingDeals ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: '48px' }}>
             <div className="spinner spinner-teal"></div>
           </div>
         ) : dealsError ? (
           <div className="no-results">{dealsError}</div>
-        ) : featuredDeals.length > 0 ? (
+        ) : filteredFeaturedDeals.length > 0 ? (
           <div className="products-grid">
-          {featuredDeals.map((deal) => (
+          {filteredFeaturedDeals.map((deal) => (
             <ProductCard
               key={deal.id}
               product={deal}
@@ -333,7 +361,9 @@ export default function LandingPage() {
           </div>
         ) : (
           <div className="no-results">
-            No current deals are available. Deals appear here when approved shops publish active product listings.
+            {featuredDeals.length > 0
+              ? 'Qaybtan wax product ah lagama helin.'
+              : 'No current deals are available. Deals appear here when approved shops publish active product listings.'}
           </div>
         )}
       </section>

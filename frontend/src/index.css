@@ -620,6 +620,56 @@ a {
   color: var(--color-white);
 }
 
+.category-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: -10px 0 28px;
+  padding: 8px;
+  overflow-x: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #f8fafc;
+  scrollbar-width: thin;
+}
+
+.shop-category-filter {
+  margin: 0 0 20px;
+}
+
+.category-filter-btn {
+  flex: 0 0 auto;
+  padding: 9px 15px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: #64748b;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color .2s ease, background .2s ease, border-color .2s ease, box-shadow .2s ease;
+}
+
+.category-filter-btn:hover {
+  border-color: #99f6e4;
+  background: #f0fdfa;
+  color: #0f766e;
+}
+
+.category-filter-btn.active {
+  border-color: #0d9488;
+  background: #0d9488;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(13, 148, 136, .22);
+}
+
+.category-filter-btn:focus-visible {
+  outline: 3px solid rgba(13, 148, 136, .2);
+  outline-offset: 2px;
+}
+
 .footer-link,
 .nav-link {
   border: 0;
@@ -2264,6 +2314,16 @@ a {
   margin-bottom: 16px;
   padding-bottom: 12px;
   border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.vendor-listing-card-title small {
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .vendor-catalog-search {
@@ -2295,8 +2355,12 @@ a {
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.15s;
-  border: 1px solid transparent;
-  margin-bottom: 4px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 8px;
+  width: 100%;
+  background: #fff;
+  text-align: left;
+  font-family: inherit;
 }
 
 .vendor-catalog-item:hover {
@@ -2404,6 +2468,68 @@ a {
   color: #dc2626;
   border: 1px solid #fca5a5;
 }
+
+.vendor-catalog-list {
+  max-height: 430px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.vendor-catalog-action {
+  flex: 0 0 auto;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #ecfdf5;
+  color: #047857;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.vendor-catalog-action.listed {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.vendor-price-card {
+  position: sticky;
+  top: 20px;
+}
+
+@media (max-width: 900px) {
+  .vendor-price-card { position: static; }
+}
+
+.shop-banner-preview-wrap {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.shop-banner-preview {
+  width: 100%;
+  height: 210px;
+  object-fit: cover;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.shop-banner-preview-wrap .admin-product-clear-btn {
+  justify-self: start;
+  margin: 0;
+}
+
+.customer-shop-banner {
+  display: block;
+  width: calc(100% + 48px);
+  height: clamp(180px, 28vw, 320px);
+  margin: -24px -24px 22px;
+  object-fit: cover;
+  background: #f1f5f9;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.customer-shop-heading { min-width: 0; }
 
 /* =============================================
    REPORTING OVERVIEW STAT CARDS (small variant)

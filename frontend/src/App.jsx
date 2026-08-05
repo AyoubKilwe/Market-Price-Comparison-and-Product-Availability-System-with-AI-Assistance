@@ -100,11 +100,11 @@ export default function App() {
         )}
 
         {view === 'vendor-profile' && (
-          <VendorShopProfilePage user={user} onViewChange={setView} />
+          <VendorShopProfilePage user={user} onViewChange={setView} onSignOut={handleSignOut} />
         )}
 
         {view === 'vendor-listing' && (
-          <VendorProductListingPage user={user} onViewChange={setView} />
+          <VendorProductListingPage user={user} onViewChange={setView} onSignOut={handleSignOut} />
         )}
 
         {view === 'admin-approval' && <AdminApprovalPage onViewChange={setView} onSignOut={handleSignOut} />}
@@ -115,8 +115,8 @@ export default function App() {
         {view === 'shop-catalog' && <ShopCatalogPage />}
       </main>
 
-      {/* Floating AI Chat Assistant */}
-      <AiAssistant />
+      {/* AI assistant is available only on customer/public pages. */}
+      {!isDashboardView && <AiAssistant />}
 
       {/* Footer — hidden on dashboard views */}
       {!isDashboardView && (

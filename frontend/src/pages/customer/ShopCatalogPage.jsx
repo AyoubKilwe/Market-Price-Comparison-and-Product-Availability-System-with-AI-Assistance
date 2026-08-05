@@ -1,8 +1,8 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import customerApi from './customerApi';
 
 export default function ShopCatalogPage() {
-  const [selectedCategory, setSelectedCategory] = useState('All Categories');
+  const [selectedCategory, setSelectedCategory] = useState('Dhammaan');
   const [shops, setShops] = useState([]);
   const [selectedShop, setSelectedShop] = useState(null);
   const [listings, setListings] = useState([]);
@@ -34,13 +34,14 @@ export default function ShopCatalogPage() {
       const data = await customerApi.getShopDetails(shopId);
       setSelectedShop(data.shop);
       setListings(data.listings || []);
+      setSelectedCategory('Dhammaan');
     } catch (error) {
       console.error('Failed to fetch shop details:', error);
     }
   };
 
   const categories = useMemo(() => {
-    const catSet = new Set(['All Categories']);
+    const catSet = new Set(['Dhammaan']);
     listings.forEach((item) => {
       if (item.product?.category) {
         catSet.add(item.product.category);
@@ -50,7 +51,7 @@ export default function ShopCatalogPage() {
   }, [listings]);
 
   const filteredListings = useMemo(() => {
-    if (selectedCategory === 'All Categories') return listings;
+    if (selectedCategory === 'Dhammaan') return listings;
     return listings.filter((item) => item.product?.category === selectedCategory);
   }, [listings, selectedCategory]);
 
@@ -114,21 +115,30 @@ export default function ShopCatalogPage() {
                     marginBottom: '24px',
                   }}
                 >
-                  <h2 style={{ fontSize: '22px', fontWeight: '800' }}>{selectedShop.shopName}</h2>
-                  <p style={{ color: 'var(--text-secondary)', marginTop: '4px' }}>
-                    Phone: {selectedShop.phone} • Address: {selectedShop.address || 'Hargeisa, Somaliland'}
-                  </p>
+                  {selectedShop.image && (
+                    <img
+                      className="customer-shop-banner"
+                      src={selectedShop.image}
+                      alt={`${selectedShop.shopName} banner`}
+                    />
+                  )}
+                  <div className="customer-shop-heading">
+                    <h2 style={{ fontSize: '22px', fontWeight: '800' }}>{selectedShop.shopName}</h2>
+                    <p style={{ color: 'var(--text-secondary)', marginTop: '4px' }}>
+                      Phone: {selectedShop.phone} • Address: {selectedShop.address || 'Hargeisa, Somaliland'}
+                    </p>
+                  </div>
                 </div>
 
                 {/* Category Pills */}
                 {categories.length > 1 && (
-                  <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap' }}>
+                  <div className="category-filter-bar shop-category-filter" aria-label="Filter shop products by category">
                     {categories.map((cat) => (
                       <button
                         key={cat}
                         type="button"
                         onClick={() => setSelectedCategory(cat)}
-                        className={`pill ${selectedCategory === cat ? 'active' : ''}`}
+                        className={`category-filter-btn ${selectedCategory === cat ? 'active' : ''}`}
                       >
                         {cat}
                       </button>
