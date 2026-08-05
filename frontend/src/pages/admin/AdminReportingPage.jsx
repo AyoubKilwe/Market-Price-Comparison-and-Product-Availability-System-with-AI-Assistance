@@ -7,7 +7,6 @@ const navItems = [
   { label: 'Shops', icon: '🏪' },
   { label: 'Listings', icon: '🧾' },
   { label: 'Reporting', icon: '📊', active: true },
-  { label: 'Settings', icon: '⚙' },
 ];
 
 export default function AdminReportingPage({ onViewChange, onSignOut }) {
@@ -91,7 +90,7 @@ export default function AdminReportingPage({ onViewChange, onSignOut }) {
     if (label === 'Approvals') return onViewChange?.('admin-approval');
     if (label === 'Shops') return onViewChange?.('admin-shop');
     if (label === 'Listings') return onViewChange?.('admin-listings');
-    if (label === 'Reporting' || label === 'Settings') return onViewChange?.('admin-reporting');
+    if (label === 'Reporting') return onViewChange?.('admin-reporting');
   };
 
   return (

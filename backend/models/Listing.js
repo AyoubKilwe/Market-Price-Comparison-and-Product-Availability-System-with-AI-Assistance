@@ -9,6 +9,12 @@ const listingSchema = new mongoose.Schema(
       required: [true, 'Price is required'],
       min: [0.01, 'Price must be greater than zero'],
     },
+    unit: {
+      type: String,
+      required: [true, 'Selling unit is required'],
+      trim: true,
+      default: '1 item',
+    },
     stockStatus: {
       type: String,
       enum: ['In Stock', 'Low Stock', 'Out of Stock'],

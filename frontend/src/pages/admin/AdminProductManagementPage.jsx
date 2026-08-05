@@ -7,7 +7,6 @@ const navItems = [
   { label: 'Shops', icon: '🏪' },
   { label: 'Listings', icon: '🧾' },
   { label: 'Reporting', icon: '📊' },
-  { label: 'Settings', icon: '⚙' },
 ];
 
 const statusClassName = {
@@ -30,7 +29,6 @@ export default function AdminProductManagementPage({ onViewChange, onSignOut }) 
   const [formState, setFormState] = useState({
     name: '',
     category: 'Raashin',
-    unit: '',
     image: '',
   });
   const [items, setItems] = useState([]);
@@ -71,7 +69,7 @@ export default function AdminProductManagementPage({ onViewChange, onSignOut }) 
 
   const resetForm = () => {
     setEditingId(null);
-    setFormState({ name: '', category: 'Raashin', unit: '', image: '' });
+    setFormState({ name: '', category: 'Raashin', image: '' });
   };
 
   const saveCatalogItem = async (e) => {
@@ -88,7 +86,6 @@ export default function AdminProductManagementPage({ onViewChange, onSignOut }) 
       const payload = {
         name: formState.name.trim(),
         category: formState.category,
-        unit: formState.unit.trim() || '1 unit',
         image: formState.image.trim(),
       };
 
@@ -114,7 +111,6 @@ export default function AdminProductManagementPage({ onViewChange, onSignOut }) 
     setFormState({
       name: item.name,
       category: item.category,
-      unit: item.unit || '',
       image: item.image || '',
     });
     setNotice(`Editing "${item.name}".`);
@@ -154,7 +150,7 @@ export default function AdminProductManagementPage({ onViewChange, onSignOut }) 
     if (label === 'Approvals') onViewChange?.('admin-approval');
     if (label === 'Shops') onViewChange?.('admin-shop');
     if (label === 'Listings') onViewChange?.('admin-listings');
-    if (label === 'Reporting' || label === 'Settings') onViewChange?.('admin-reporting');
+    if (label === 'Reporting') onViewChange?.('admin-reporting');
   };
 
   return (
@@ -242,18 +238,6 @@ export default function AdminProductManagementPage({ onViewChange, onSignOut }) 
                   <option key={category} value={category}>{category}</option>
                 ))}
               </select>
-            </label>
-
-            <label className="admin-product-field">
-              <span>Unit / Size *</span>
-              <input
-                type="text"
-                value={formState.unit}
-                onChange={updateForm('unit')}
-                placeholder="e.g. 1kg, 5L, 12 pieces"
-                maxLength="50"
-                required
-              />
             </label>
 
             <label className="admin-product-field">

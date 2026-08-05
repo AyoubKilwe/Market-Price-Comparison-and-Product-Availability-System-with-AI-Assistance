@@ -7,7 +7,6 @@ const navItems = [
   { label: 'Shops', icon: '🏪', active: true },
   { label: 'Listings', icon: '🧾' },
   { label: 'Reporting', icon: '📊' },
-  { label: 'Settings', icon: '⚙' },
 ];
 
 const statusClassName = {
@@ -72,7 +71,7 @@ export default function AdminShopManagementPage({ onViewChange, onSignOut }) {
     if (label === 'Approvals') return onViewChange?.('admin-approval');
     if (label === 'Shops') return onViewChange?.('admin-shop');
     if (label === 'Listings') return onViewChange?.('admin-listings');
-    if (label === 'Reporting' || label === 'Settings') return onViewChange?.('admin-reporting');
+    if (label === 'Reporting') return onViewChange?.('admin-reporting');
   };
 
   return (

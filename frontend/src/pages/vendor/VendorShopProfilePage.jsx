@@ -4,6 +4,7 @@ import vendorApi from './vendorApi';
 const navItems = [
   { label: 'Shop Profile', icon: '🏪', active: true },
   { label: 'Manage Listings', icon: '🧾' },
+  { label: 'Settings', icon: '⚙' },
 ];
 
 export default function VendorShopProfilePage({ user, onViewChange, onSignOut }) {
@@ -107,6 +108,7 @@ export default function VendorShopProfilePage({ user, onViewChange, onSignOut })
   const handleNavigate = (label) => {
     if (label === 'Manage Listings') onViewChange?.('vendor-listing');
     if (label === 'Shop Profile') onViewChange?.('vendor-profile');
+    if (label === 'Settings') onViewChange?.('vendor-settings');
   };
 
   return (

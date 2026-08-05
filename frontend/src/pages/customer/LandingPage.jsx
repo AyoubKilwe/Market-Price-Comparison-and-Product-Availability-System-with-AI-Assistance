@@ -11,15 +11,15 @@ export default function LandingPage() {
   const [featuredDeals, setFeaturedDeals] = useState([]);
   const [isLoadingDeals, setIsLoadingDeals] = useState(true);
   const [dealsError, setDealsError] = useState('');
-  const [selectedDealCategory, setSelectedDealCategory] = useState('Dhammaan');
+  const [selectedDealCategory, setSelectedDealCategory] = useState('All');
 
   const dealCategories = useMemo(
-    () => ['Dhammaan', ...new Set(featuredDeals.map((deal) => deal.category).filter(Boolean))],
+    () => ['All', ...new Set(featuredDeals.map((deal) => deal.category).filter(Boolean))],
     [featuredDeals]
   );
 
   const filteredFeaturedDeals = useMemo(
-    () => selectedDealCategory === 'Dhammaan'
+    () => selectedDealCategory === 'All'
       ? featuredDeals
       : featuredDeals.filter((deal) => deal.category === selectedDealCategory),
     [featuredDeals, selectedDealCategory]
@@ -32,7 +32,7 @@ export default function LandingPage() {
         setFeaturedDeals((data.deals || []).map(({ product, listing, shopCount }) => ({
           id: product._id,
           name: product.name,
-          unit: product.unit || product.category,
+          unit: listing.unit || '1 item',
           category: product.category,
           image: product.image,
           price: listing.price,
@@ -190,7 +190,7 @@ export default function LandingPage() {
             <div>
               <h2 className="comparison-title">{selectedProductComparison.product.name}</h2>
               <p style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
-                Comparing prices per {selectedProductComparison.product.unit || 'unit'} across registered shops
+                Comparing current prices and selling quantities across registered shops
               </p>
             </div>
             <button
@@ -212,12 +212,6 @@ export default function LandingPage() {
                   <div className="summary-card-label">Cheapest Price</div>
                   <div className="summary-card-value">
                     ${selectedProductComparison.summary.lowest?.toFixed(2)}
-                  </div>
-                </div>
-                <div className="summary-card">
-                  <div className="summary-card-label">Average Price</div>
-                  <div className="summary-card-value">
-                    ${selectedProductComparison.summary.average?.toFixed(2)}
                   </div>
                 </div>
                 <div className="summary-card">
@@ -264,6 +258,9 @@ export default function LandingPage() {
                         </td>
                         <td>
                           <span className="price-cell">${item.price.toFixed(2)}</span>
+                          <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '3px' }}>
+                            {item.unit || '1 item'}
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -362,7 +359,7 @@ export default function LandingPage() {
         ) : (
           <div className="no-results">
             {featuredDeals.length > 0
-              ? 'Qaybtan wax product ah lagama helin.'
+              ? 'No products were found in this category.'
               : 'No current deals are available. Deals appear here when approved shops publish active product listings.'}
           </div>
         )}

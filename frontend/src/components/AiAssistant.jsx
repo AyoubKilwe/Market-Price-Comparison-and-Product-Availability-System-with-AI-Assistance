@@ -1,4 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import customerApi from '../pages/customer/customerApi';
 
 export default function AiAssistant() {
   const [isOpen, setIsOpen] = useState(false);
@@ -34,7 +35,7 @@ export default function AiAssistant() {
     setIsLoading(true);
 
     try {
-      const result = await api.post('/api/ai/ask', { question: questionText });
+      const result = await customerApi.askAi(questionText);
 
       setMessages((prev) => [
         ...prev,
@@ -42,7 +43,9 @@ export default function AiAssistant() {
           id: (Date.now() + 1).toString(),
           sender: 'bot',
           text: result.answer,
-          tableData: result.data ? result.data.listings : null,
+          tableData: result.data?.listings || result.data?.products?.flatMap(({ product, listings }) =>
+            listings.map((listing) => ({ ...listing, productName: product.name }))
+          ) || null,
         },
       ]);
     } catch (error) {
@@ -51,16 +54,12 @@ export default function AiAssistant() {
         {
           id: (Date.now() + 1).toString(),
           sender: 'bot',
-          text: 'Sorry, I couldn\'t fetch prices right now. Make sure the backend server is running.',
+          text: error.message || 'MarketEye could not answer that question right now. Please try again.',
         },
       ]);
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleSuggestionClick = (text) => {
-    handleSend(text);
   };
 
   return (
@@ -152,15 +151,20 @@ export default function AiAssistant() {
                     msg.sender === 'user' ? 'bubble-user' : 'bubble-bot'
                   }`}
                 >
-                  <div>{msg.text}</div>
+                  <div style={{ whiteSpace: 'pre-line' }}>{msg.text}</div>
                   
                   {/* Embedded comparison table if returned by backend API */}
                   {msg.tableData && msg.tableData.length > 0 && (
                     <div className="ai-table-data">
                       {msg.tableData.map((item, idx) => (
                         <div key={idx} className="ai-table-row">
-                          <span className="shop-name">{item.shop?.shopName || 'Shop'}</span>
-                          <span className="shop-price">${item.price?.toFixed(2)}</span>
+                          <span className="shop-name">
+                            {item.productName && <small>{item.productName}<br /></small>}
+                            {item.shop?.shopName || 'Shop'}
+                          </span>
+                          <span className="shop-price">
+                            ${item.price?.toFixed(2)}{item.unit ? ` / ${item.unit}` : ''}
+                          </span>
                         </div>
                       ))}
                     </div>
@@ -183,23 +187,6 @@ export default function AiAssistant() {
 
           {/* Footer & Suggestion Pills */}
           <div className="ai-chat-footer">
-            <div className="ai-suggestions">
-              <button
-                type="button"
-                className="suggestion-pill"
-                onClick={() => handleSuggestionClick('Compare milk prices')}
-              >
-                Compare milk prices
-              </button>
-              <button
-                type="button"
-                className="suggestion-pill"
-                onClick={() => handleSuggestionClick('Cheapest rice')}
-              >
-                Cheapest rice
-              </button>
-            </div>
-            
             <form
               onSubmit={(e) => {
                 e.preventDefault();

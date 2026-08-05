@@ -28,6 +28,7 @@ const createListing = asyncHandler(async (req, res) => {
     shop: shop._id,
     product: product._id,
     price: req.body.price,
+    unit: req.body.unit,
     stockStatus: req.body.stockStatus,
     isActive: req.body.isActive ?? true,
   });
@@ -54,6 +55,7 @@ const updateListing = asyncHandler(async (req, res) => {
     { _id: req.params.id, shop: shop._id },
     {
       price: req.body.price,
+      unit: req.body.unit,
       stockStatus: req.body.stockStatus,
       isActive: req.body.isActive,
     },

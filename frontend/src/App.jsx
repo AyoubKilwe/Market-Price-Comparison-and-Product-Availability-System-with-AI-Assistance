@@ -12,6 +12,7 @@ import ShopCatalogPage from './pages/customer/ShopCatalogPage';
 // Vendor Pages
 import VendorShopProfilePage from './pages/vendor/VendorShopProfilePage';
 import VendorProductListingPage from './pages/vendor/VendorProductListingPage';
+import VendorPasswordPage from './pages/vendor/VendorPasswordPage';
 
 // Admin Pages
 import AdminApprovalPage from './pages/admin/AdminApprovalPage';
@@ -105,6 +106,10 @@ export default function App() {
 
         {view === 'vendor-listing' && (
           <VendorProductListingPage user={user} onViewChange={setView} onSignOut={handleSignOut} />
+        )}
+
+        {view === 'vendor-settings' && (
+          <VendorPasswordPage user={user} onViewChange={setView} onSignOut={handleSignOut} />
         )}
 
         {view === 'admin-approval' && <AdminApprovalPage onViewChange={setView} onSignOut={handleSignOut} />}

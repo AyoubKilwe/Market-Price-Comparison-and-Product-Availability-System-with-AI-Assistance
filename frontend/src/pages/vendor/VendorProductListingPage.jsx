@@ -4,7 +4,7 @@ import vendorApi from './vendorApi';
 const navItems = [
   { label: 'Shop Profile', icon: '🏪' },
   { label: 'Manage Listings', icon: '🧾', active: true },
-  { label: 'Approval Status', icon: '✓' },
+  { label: 'Settings', icon: '⚙' },
 ];
 
 const statusClassName = {
@@ -17,6 +17,7 @@ export default function VendorProductListingPage({ user, onViewChange, onSignOut
   const [catalogSearchTerm, setCatalogSearchTerm] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPrice, setCurrentPrice] = useState('');
+  const [listingUnit, setListingUnit] = useState('');
   const [stockStatus, setStockStatus] = useState('In Stock');
   const [officialCatalog, setOfficialCatalog] = useState([]);
   const [listings, setListings] = useState([]);
@@ -84,6 +85,7 @@ export default function VendorProductListingPage({ user, onViewChange, onSignOut
     setSelectedProduct(product);
     setEditingListingId(null);
     setCurrentPrice('');
+    setListingUnit('');
     setStockStatus('In Stock');
     setNotice(`Selected "${product.name}". Enter your price and stock availability.`);
   };
@@ -106,16 +108,17 @@ export default function VendorProductListingPage({ user, onViewChange, onSignOut
 
     try {
       if (editingListingId) {
-        await vendorApi.updateListing(editingListingId, { price: priceNum, stockStatus });
+        await vendorApi.updateListing(editingListingId, { price: priceNum, unit: listingUnit.trim(), stockStatus });
         setNotice('Listing updated successfully!');
       } else {
-        await vendorApi.createListing({ product: selectedProduct._id, price: priceNum, stockStatus });
+        await vendorApi.createListing({ product: selectedProduct._id, price: priceNum, unit: listingUnit.trim(), stockStatus });
         setNotice('New product price listing added!');
       }
 
       setSelectedProduct(null);
       setEditingListingId(null);
       setCurrentPrice('');
+      setListingUnit('');
       setStockStatus('In Stock');
 
       const listingsRes = await vendorApi.getMyListings();
@@ -131,6 +134,7 @@ export default function VendorProductListingPage({ user, onViewChange, onSignOut
     setEditingListingId(listing._id);
     setSelectedProduct(listing.product);
     setCurrentPrice(String(listing.price));
+    setListingUnit(listing.unit || '1 item');
     setStockStatus(listing.stockStatus || 'In Stock');
     setNotice(`Editing listing for "${listing.product?.name}".`);
   };
@@ -147,8 +151,9 @@ export default function VendorProductListingPage({ user, onViewChange, onSignOut
   };
 
   const handleNavigate = (label) => {
-    if (label === 'Shop Profile' || label === 'Approval Status') onViewChange?.('vendor-profile');
+    if (label === 'Shop Profile') onViewChange?.('vendor-profile');
     if (label === 'Manage Listings') onViewChange?.('vendor-listing');
+    if (label === 'Settings') onViewChange?.('vendor-settings');
   };
 
   return (
@@ -298,6 +303,18 @@ export default function VendorProductListingPage({ user, onViewChange, onSignOut
             )}
 
             <label className="admin-product-field">
+              <span>Selling Unit / Quantity *</span>
+              <input
+                type="text"
+                value={listingUnit}
+                onChange={(e) => setListingUnit(e.target.value)}
+                placeholder="Example: 1 sack, half sack, 1 carton"
+                maxLength="50"
+                required
+              />
+            </label>
+
+            <label className="admin-product-field">
               <span>Your Selling Price ($ USD) *</span>
               <input
                 type="number"
@@ -344,7 +361,10 @@ export default function VendorProductListingPage({ user, onViewChange, onSignOut
           {filteredListings.length > 0 ? (
             filteredListings.map((item) => (
               <div key={item._id} className="admin-product-row">
-                <div className="admin-product-name-cell">{item.product?.name || 'Item'}</div>
+                <div className="admin-product-name-cell">
+                  <div>{item.product?.name || 'Item'}</div>
+                  <small style={{ color: '#64748b', fontWeight: 500 }}>{item.unit || '1 item'}</small>
+                </div>
                 <div>{item.product?.category}</div>
                 <div style={{ fontWeight: '700', color: 'var(--color-primary)' }}>
                   ${item.price?.toFixed(2)}

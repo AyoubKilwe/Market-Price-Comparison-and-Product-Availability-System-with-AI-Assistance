@@ -9,6 +9,7 @@ export const vendorApi = {
   updateListing: (id, listingData) => api.put(`/api/listings/${id}`, listingData),
   deleteListing: (id) => api.delete(`/api/listings/${id}`),
   getOfficialProducts: () => api.get('/api/products'),
+  changePassword: (passwordData) => api.patch('/api/auth/change-password', passwordData),
 };
 
 export default vendorApi;

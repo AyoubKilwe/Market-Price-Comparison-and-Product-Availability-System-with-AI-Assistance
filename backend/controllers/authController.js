@@ -79,4 +79,19 @@ const getMe = asyncHandler(async (req, res) => {
   return res.status(200).json({ user: req.user.toJSON() });
 });
 
-module.exports = { getMe, login, registerVendor };
+const changePassword = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id).select('+password');
+  if (!user || !(await user.comparePassword(req.body.currentPassword))) {
+    return res.status(400).json({ message: 'Current password is incorrect' });
+  }
+
+  if (req.body.currentPassword === req.body.newPassword) {
+    return res.status(400).json({ message: 'New password must be different from the current password' });
+  }
+
+  user.password = req.body.newPassword;
+  await user.save();
+  return res.status(200).json({ message: 'Password changed successfully' });
+});
+
+module.exports = { changePassword, getMe, login, registerVendor };

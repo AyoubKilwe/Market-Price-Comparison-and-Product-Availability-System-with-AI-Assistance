@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import customerApi from './customerApi';
 
 export default function ShopCatalogPage() {
-  const [selectedCategory, setSelectedCategory] = useState('Dhammaan');
+  const [selectedCategory, setSelectedCategory] = useState('All');
   const [shops, setShops] = useState([]);
   const [selectedShop, setSelectedShop] = useState(null);
   const [listings, setListings] = useState([]);
@@ -29,19 +29,24 @@ export default function ShopCatalogPage() {
     fetchApprovedShops();
   }, []);
 
-  const fetchShopDetails = async (shopId) => {
+  const fetchShopDetails = async (shopId, shouldScroll = false) => {
     try {
       const data = await customerApi.getShopDetails(shopId);
       setSelectedShop(data.shop);
       setListings(data.listings || []);
-      setSelectedCategory('Dhammaan');
+      setSelectedCategory('All');
+      if (shouldScroll) {
+        window.setTimeout(() => {
+          document.getElementById('shop-details')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 0);
+      }
     } catch (error) {
       console.error('Failed to fetch shop details:', error);
     }
   };
 
   const categories = useMemo(() => {
-    const catSet = new Set(['Dhammaan']);
+    const catSet = new Set(['All']);
     listings.forEach((item) => {
       if (item.product?.category) {
         catSet.add(item.product.category);
@@ -51,12 +56,12 @@ export default function ShopCatalogPage() {
   }, [listings]);
 
   const filteredListings = useMemo(() => {
-    if (selectedCategory === 'Dhammaan') return listings;
+    if (selectedCategory === 'All') return listings;
     return listings.filter((item) => item.product?.category === selectedCategory);
   }, [listings, selectedCategory]);
 
   return (
-    <div className="container" style={{ padding: '40px 24px' }}>
+    <div className="container shop-catalog-page" style={{ padding: '40px 24px' }}>
       <div style={{ marginBottom: '32px' }}>
         <h1 style={{ fontSize: '28px', fontWeight: '800', marginBottom: '8px' }}>Storefront Directory</h1>
         <p style={{ color: 'var(--text-secondary)' }}>
@@ -69,16 +74,17 @@ export default function ShopCatalogPage() {
           <div className="spinner spinner-teal"></div>
         </div>
       ) : shops.length > 0 ? (
-        <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: '32px' }}>
+        <div className="shop-directory-layout">
           {/* Left Sidebar: Shops list */}
-          <div>
+          <div className="shop-selector-section">
             <h3 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '16px' }}>Available Shops</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div className="shop-card-grid">
               {shops.map((shop) => (
                 <button
                   key={shop._id}
                   type="button"
-                  onClick={() => fetchShopDetails(shop._id)}
+                  onClick={() => fetchShopDetails(shop._id, true)}
+                  className={`shop-selector-card ${selectedShop?._id === shop._id ? 'active' : ''}`}
                   style={{
                     display: 'flex',
                     flexDirection: 'column',
@@ -93,6 +99,9 @@ export default function ShopCatalogPage() {
                     width: '100%',
                   }}
                 >
+                  <div className="shop-selector-image">
+                    {shop.image ? <img src={shop.image} alt="" /> : <span>{shop.shopName?.[0] || 'S'}</span>}
+                  </div>
                   <span style={{ fontWeight: '700', fontSize: '15px' }}>{shop.shopName}</span>
                   <span style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>
                     📍 {shop.address || 'Hargeisa'}
@@ -103,10 +112,11 @@ export default function ShopCatalogPage() {
           </div>
 
           {/* Right Main Content: Shop catalog */}
-          <div>
+          <div id="shop-details" className="shop-catalog-detail">
             {selectedShop ? (
               <div>
                 <div
+                  className="shop-products-table"
                   style={{
                     backgroundColor: '#ffffff',
                     padding: '24px',
@@ -156,6 +166,7 @@ export default function ShopCatalogPage() {
                   }}
                 >
                   <div
+                    className="shop-products-head"
                     style={{
                       display: 'grid',
                       gridTemplateColumns: '2fr 1fr 1fr 1fr',
@@ -177,6 +188,7 @@ export default function ShopCatalogPage() {
                     filteredListings.map((item) => (
                       <div
                         key={item._id}
+                        className="shop-product-row"
                         style={{
                           display: 'grid',
                           gridTemplateColumns: '2fr 1fr 1fr 1fr',
@@ -188,7 +200,7 @@ export default function ShopCatalogPage() {
                         <div style={{ fontWeight: '600' }}>
                           {item.product?.name}
                           <span style={{ fontSize: '12px', color: 'var(--text-secondary)', marginLeft: '6px' }}>
-                            ({item.product?.unit})
+                            ({item.unit || '1 item'})
                           </span>
                         </div>
                         <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
