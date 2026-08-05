@@ -2,10 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import adminApi from './adminApi';
 
 const navItems = [
-  { label: 'Overview', icon: '▦' },
   { label: 'Products', icon: '▣' },
   { label: 'Approvals', icon: '✓' },
-  { label: 'Vendors', icon: '◫' },
   { label: 'Shops', icon: '🏪', active: true },
   { label: 'Listings', icon: '🧾' },
   { label: 'Reporting', icon: '📊' },
@@ -19,7 +17,7 @@ const statusClassName = {
   Suspended: 'vendor-status suspended',
 };
 
-export default function AdminShopManagementPage({ onViewChange }) {
+export default function AdminShopManagementPage({ onViewChange, onSignOut }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeItem, setActiveItem] = useState('Shops');
   const [rows, setRows] = useState([]);
@@ -70,12 +68,11 @@ export default function AdminShopManagementPage({ onViewChange }) {
 
   const handleNavigate = (label) => {
     setActiveItem(label);
-    if (label === 'Products') onViewChange?.('admin-product');
-    if (label === 'Approvals') onViewChange?.('admin-approval');
-    if (label === 'Vendors') onViewChange?.('admin-vendor');
-    if (label === 'Shops') onViewChange?.('admin-shop');
-    if (label === 'Listings') onViewChange?.('admin-listings');
-    if (label === 'Overview' || label === 'Reporting' || label === 'Settings') onViewChange?.('admin-reporting');
+    if (label === 'Products') return onViewChange?.('admin-product');
+    if (label === 'Approvals') return onViewChange?.('admin-approval');
+    if (label === 'Shops') return onViewChange?.('admin-shop');
+    if (label === 'Listings') return onViewChange?.('admin-listings');
+    if (label === 'Reporting' || label === 'Settings') return onViewChange?.('admin-reporting');
   };
 
   return (
@@ -114,7 +111,7 @@ export default function AdminShopManagementPage({ onViewChange }) {
         <div className="admin-reporting-header-row">
           <div>
             <h1>Shop Management</h1>
-            <p>View and manage all registered merchant shops in MongoDB.</p>
+            <p>View and manage all registered merchant shops.</p>
           </div>
 
           <div className="admin-reporting-searchbox">
@@ -126,6 +123,9 @@ export default function AdminShopManagementPage({ onViewChange }) {
               placeholder="Search shops..."
             />
           </div>
+          <button type="button" className="admin-signout-btn" onClick={onSignOut}>
+            Sign out
+          </button>
         </div>
 
         {notice && (

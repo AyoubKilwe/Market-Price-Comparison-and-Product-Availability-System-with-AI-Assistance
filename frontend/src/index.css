@@ -270,6 +270,8 @@ a {
   border-radius: 6px;
   font-weight: 500;
   transition: all 0.2s ease;
+  border: 0;
+  font: inherit;
 }
 
 .trending-list .tag:hover {
@@ -616,6 +618,78 @@ a {
 
 .footer-link:hover {
   color: var(--color-white);
+}
+
+.footer-link,
+.nav-link {
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.about-section {
+  padding: 72px 40px;
+  background: #ffffff;
+  scroll-margin-top: 80px;
+}
+
+.about-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+  gap: 64px;
+  align-items: center;
+}
+
+.about-kicker {
+  display: block;
+  margin-bottom: 12px;
+  color: var(--accent-teal);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.about-copy h2 {
+  margin-bottom: 18px;
+  color: var(--color-black);
+  font-size: clamp(28px, 4vw, 42px);
+  line-height: 1.15;
+}
+
+.about-copy p {
+  margin-bottom: 14px;
+  color: var(--text-secondary);
+  font-size: 15px;
+  line-height: 1.75;
+}
+
+.about-values {
+  display: grid;
+  gap: 14px;
+}
+
+.about-value-card {
+  display: grid;
+  gap: 5px;
+  padding: 18px 20px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.about-value-card strong { color: var(--color-black); }
+.about-value-card span { color: var(--text-secondary); font-size: 14px; line-height: 1.5; }
+
+#comparison-search,
+#all-deals { scroll-margin-top: 80px; }
+
+@media (max-width: 768px) {
+  .about-section { padding: 56px 24px; }
+  .about-inner { grid-template-columns: 1fr; gap: 32px; }
 }
 
 /* Login Page Container */
@@ -1472,6 +1546,32 @@ a {
   font-size: 14px;
   color: #64748b;
   margin: 0;
+}
+
+.admin-signout-btn {
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  padding: 10px 16px;
+  background: #fff;
+  color: #dc2626;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.admin-signout-btn:hover {
+  background: #fef2f2;
+  border-color: #f87171;
+  transform: translateY(-1px);
+}
+
+.admin-signout-btn:focus-visible {
+  outline: 3px solid rgba(220, 38, 38, 0.2);
+  outline-offset: 2px;
 }
 
 /* Search box */

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 export default function ProductCard({ product, onCompare }) {
   const [isFavorite, setIsFavorite] = useState(false);
@@ -73,7 +73,9 @@ export default function ProductCard({ product, onCompare }) {
           {product.originalPrice && (
             <span className="price-original">${product.originalPrice}</span>
           )}
-          <span className="price-current">${product.price.toFixed(2)}</span>
+          <span className="price-current">
+            {Number.isFinite(product.price) ? `$${product.price.toFixed(2)}` : 'No price yet'}
+          </span>
         </div>
         <button
           type="button"

@@ -74,6 +74,7 @@ export const customerApi = {
   askAi: (question) => api.post('/api/ai/ask', { question }),
   getProducts: (search = '') => api.get(`/api/products${search ? `?search=${encodeURIComponent(search)}` : ''}`),
   getProductListings: (productId) => api.get(`/api/listings/product/${productId}`),
+  getFeaturedListings: () => api.get('/api/listings/featured'),
   getApprovedShops: () => api.get('/api/shops'),
   getShopDetails: (shopId) => api.get(`/api/shops/${shopId}`),
 };

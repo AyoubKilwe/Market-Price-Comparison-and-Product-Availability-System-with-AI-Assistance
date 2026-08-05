@@ -5,6 +5,7 @@ const {
   createListing,
   deleteListing,
   getAllListings,
+  getFeaturedListings,
   getMyListings,
   getShopListings,
   updateListing,
@@ -18,6 +19,8 @@ const adminRouter = express.Router();
 const stockRule = body('stockStatus')
   .isIn(['In Stock', 'Low Stock', 'Out of Stock'])
   .withMessage('Invalid stock status');
+
+router.get('/featured', getFeaturedListings);
 
 router.post(
   '/',

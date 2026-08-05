@@ -2,18 +2,16 @@ import React, { useEffect, useMemo, useState } from 'react';
 import adminApi from './adminApi';
 
 const navItems = [
-  { label: 'Overview', icon: '▦', active: true },
   { label: 'Products', icon: '▣' },
   { label: 'Approvals', icon: '✓' },
-  { label: 'Vendors', icon: '◫' },
   { label: 'Shops', icon: '🏪' },
   { label: 'Listings', icon: '🧾' },
-  { label: 'Reporting', icon: '📊' },
+  { label: 'Reporting', icon: '📊', active: true },
   { label: 'Settings', icon: '⚙' },
 ];
 
-export default function AdminReportingPage({ onViewChange }) {
-  const [activeItem, setActiveItem] = useState('Overview');
+export default function AdminReportingPage({ onViewChange, onSignOut }) {
+  const [activeItem, setActiveItem] = useState('Reporting');
   const [searchTerm, setSearchTerm] = useState('');
   const [stats, setStats] = useState({
     totalProducts: 0,
@@ -91,10 +89,9 @@ export default function AdminReportingPage({ onViewChange }) {
     setActiveItem(label);
     if (label === 'Products') return onViewChange?.('admin-product');
     if (label === 'Approvals') return onViewChange?.('admin-approval');
-    if (label === 'Vendors') return onViewChange?.('admin-vendor');
     if (label === 'Shops') return onViewChange?.('admin-shop');
     if (label === 'Listings') return onViewChange?.('admin-listings');
-    if (label === 'Overview' || label === 'Reporting' || label === 'Settings') return onViewChange?.('admin-reporting');
+    if (label === 'Reporting' || label === 'Settings') return onViewChange?.('admin-reporting');
   };
 
   return (
@@ -133,7 +130,7 @@ export default function AdminReportingPage({ onViewChange }) {
         <div className="admin-reporting-header-row">
           <div>
             <h1>Admin Reporting & System Metrics</h1>
-            <p>Real-time analytics directly calculated from MongoDB collections.</p>
+            <p>Real-time analytics and system metrics.</p>
           </div>
 
           <div className="admin-reporting-searchbox">
@@ -145,6 +142,9 @@ export default function AdminReportingPage({ onViewChange }) {
               placeholder="Search shops or metrics..."
             />
           </div>
+          <button type="button" className="admin-signout-btn" onClick={onSignOut}>
+            Sign out
+          </button>
         </div>
 
         {notice && (
@@ -218,7 +218,7 @@ export default function AdminReportingPage({ onViewChange }) {
                 ))
               ) : (
                 <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-secondary)' }}>
-                  No registered shops found in MongoDB.
+                  No registered shops found.
                 </div>
               )}
             </div>

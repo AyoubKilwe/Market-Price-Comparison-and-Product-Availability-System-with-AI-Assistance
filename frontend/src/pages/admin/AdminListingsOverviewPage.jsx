@@ -2,10 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import adminApi from './adminApi';
 
 const navItems = [
-  { label: 'Overview', icon: '▦' },
   { label: 'Products', icon: '▣' },
   { label: 'Approvals', icon: '✓' },
-  { label: 'Vendors', icon: '◫' },
   { label: 'Shops', icon: '🏪' },
   { label: 'Listings', icon: '🧾', active: true },
   { label: 'Reporting', icon: '📊' },
@@ -18,7 +16,7 @@ const statusClassName = {
   'Out of Stock': 'listing-status out-of-stock',
 };
 
-export default function AdminListingsOverviewPage({ onViewChange }) {
+export default function AdminListingsOverviewPage({ onViewChange, onSignOut }) {
   const [activeItem, setActiveItem] = useState('Listings');
   const [searchTerm, setSearchTerm] = useState('');
   const [rows, setRows] = useState([]);
@@ -60,10 +58,9 @@ export default function AdminListingsOverviewPage({ onViewChange }) {
     setActiveItem(label);
     if (label === 'Products') return onViewChange?.('admin-product');
     if (label === 'Approvals') return onViewChange?.('admin-approval');
-    if (label === 'Vendors') return onViewChange?.('admin-vendor');
     if (label === 'Shops') return onViewChange?.('admin-shop');
     if (label === 'Listings') return onViewChange?.('admin-listings');
-    if (label === 'Overview' || label === 'Reporting' || label === 'Settings') return onViewChange?.('admin-reporting');
+    if (label === 'Reporting' || label === 'Settings') return onViewChange?.('admin-reporting');
   };
 
   return (
@@ -101,8 +98,8 @@ export default function AdminListingsOverviewPage({ onViewChange }) {
       <section className="admin-reporting-content">
         <div className="admin-reporting-header-row">
           <div>
-            <h1>Listings Overview</h1>
-            <p>Monitor all product prices, stock status, and shop listings submitted to MongoDB.</p>
+            <h1>Market Listings & Prices</h1>
+            <p>Monitor all product prices, stock status, and shop listings.</p>
           </div>
 
           <div className="admin-reporting-searchbox">
@@ -114,6 +111,9 @@ export default function AdminListingsOverviewPage({ onViewChange }) {
               placeholder="Search listings..."
             />
           </div>
+          <button type="button" className="admin-signout-btn" onClick={onSignOut}>
+            Sign out
+          </button>
         </div>
 
         {notice && (
@@ -177,7 +177,7 @@ export default function AdminListingsOverviewPage({ onViewChange }) {
             ))
           ) : (
             <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-secondary)' }}>
-              No product listings submitted to MongoDB yet.
+              No product listings submitted yet.
             </div>
           )}
         </div>

@@ -12,7 +12,7 @@ const getProducts = asyncHandler(async (req, res) => {
     filter.$or = [{ name: search }, { category: search }];
   }
 
-  const products = await Product.find(filter).sort({ name: 1, unit: 1 });
+  const products = await Product.find(filter).sort({ name: 1 });
   return res.status(200).json({ products });
 });
 

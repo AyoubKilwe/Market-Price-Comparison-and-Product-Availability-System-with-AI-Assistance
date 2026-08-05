@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useEffect, useState } from 'react';
 import ProductCard from '../../components/ProductCard';
 import customerApi from './customerApi';
 
@@ -8,50 +8,33 @@ export default function LandingPage() {
   const [isSearching, setIsSearching] = useState(false);
   const [selectedProductComparison, setSelectedProductComparison] = useState(null);
   const [isLoadingComparison, setIsLoadingComparison] = useState(false);
+  const [featuredDeals, setFeaturedDeals] = useState([]);
+  const [isLoadingDeals, setIsLoadingDeals] = useState(true);
+  const [dealsError, setDealsError] = useState('');
 
-  // Mockup deals for landing display
-  const mockDeals = [
-    {
-      id: 'mock1',
-      name: 'Premium Basmati Rice',
-      unit: '5kg',
-      shopName: 'FreshMart',
-      badge: '-15% Drop',
-      originalPrice: 18.99,
-      price: 16.14,
-      image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=150&auto=format&fit=crop&q=60'
-    },
-    {
-      id: 'mock2',
-      name: 'Organic Whole Milk',
-      unit: '1 Gal',
-      shopName: 'CityGrocer',
-      badge: 'Best Value',
-      originalPrice: 5.50,
-      price: 4.99,
-      image: 'https://images.unsplash.com/photo-1550583724-b2692b85b150?w=150&auto=format&fit=crop&q=60'
-    },
-    {
-      id: 'mock3',
-      name: 'Pure Cane Sugar',
-      unit: '2kg',
-      shopName: 'ValueStore',
-      badge: '-10% Drop',
-      originalPrice: 3.20,
-      price: 2.88,
-      image: 'https://images.unsplash.com/photo-1581798459219-318e76aecc7b?w=150&auto=format&fit=crop&q=60'
-    },
-    {
-      id: 'mock4',
-      name: 'Extra Virgin Olive Oil',
-      unit: '500ml',
-      shopName: 'FreshMart',
-      badge: 'Trending',
-      originalPrice: 12.50,
-      price: 11.00,
-      image: 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=150&auto=format&fit=crop&q=60'
-    }
-  ];
+  useEffect(() => {
+    const loadFeaturedDeals = async () => {
+      try {
+        const data = await customerApi.getFeaturedListings();
+        setFeaturedDeals((data.deals || []).map(({ product, listing, shopCount }) => ({
+          id: product._id,
+          name: product.name,
+          unit: product.unit || product.category,
+          category: product.category,
+          image: product.image,
+          price: listing.price,
+          shopName: shopCount > 1 ? `${shopCount} shops` : listing.shop?.shopName,
+          badge: 'Best Value',
+        })));
+      } catch (error) {
+        setDealsError(error.message || 'Could not load current deals.');
+      } finally {
+        setIsLoadingDeals(false);
+      }
+    };
+
+    loadFeaturedDeals();
+  }, []);
 
   // Perform search on backend API
   const handleSearch = async (queryText) => {
@@ -65,11 +48,23 @@ export default function LandingPage() {
     try {
       const data = await customerApi.getProducts(trimmed);
       if (data.products) {
-        const formatted = data.products.map(p => ({
+        const comparisons = await Promise.all(
+          data.products.map(async (product) => {
+            try {
+              return await customerApi.getProductListings(product._id);
+            } catch {
+              return null;
+            }
+          })
+        );
+        const formatted = data.products.map((p, index) => ({
           id: p._id,
           name: p.name,
-          unit: p.unit,
-          price: p.price || 0,
+          unit: p.unit || p.category,
+          price: comparisons[index]?.summary?.lowest ?? null,
+          shopName: comparisons[index]?.listings?.length
+            ? `${comparisons[index].listings.length} shop${comparisons[index].listings.length === 1 ? '' : 's'}`
+            : 'No active listings',
           category: p.category,
           image: p.image || ''
         }));
@@ -84,22 +79,6 @@ export default function LandingPage() {
 
   // Perform comparison on backend API
   const handleCompareProduct = async (product) => {
-    if (product.id.startsWith('mock')) {
-      setSelectedProductComparison({
-        product: { name: product.name, unit: product.unit },
-        summary: { lowest: product.price, highest: product.price + 2, average: product.price + 0.9 },
-        listings: [
-          { shop: { shopName: product.shopName, phone: '252-63-444555', address: 'Main Street' }, price: product.price, stockStatus: 'In Stock' },
-          { shop: { shopName: 'Al-Baraka Store', phone: '252-63-123456', address: 'Jigjiga Yar' }, price: product.price + 1.2, stockStatus: 'Low Stock' },
-          { shop: { shopName: 'SomMart', phone: '252-63-789012', address: 'Downtown' }, price: product.price + 2.0, stockStatus: 'Out of Stock' }
-        ]
-      });
-      setTimeout(() => {
-        document.getElementById('comparison-view')?.scrollIntoView({ behavior: 'smooth' });
-      }, 100);
-      return;
-    }
-
     setIsLoadingComparison(true);
     try {
       const data = await customerApi.getProductListings(product.id);
@@ -125,7 +104,7 @@ export default function LandingPage() {
   return (
     <div className="main-content">
       {/* Hero Section */}
-      <section className="hero-section">
+      <section id="comparison-search" className="hero-section">
         <h1 className="hero-title">
           Compare prices of everyday essentials. <span className="teal-highlight">Instantly.</span>
         </h1>
@@ -167,12 +146,21 @@ export default function LandingPage() {
             </button>
           </div>
 
-          <div className="trending-list">
-            <span>TRENDING:</span>
-            <span className="tag" onClick={() => { setSearchQuery('Rice'); handleSearch('Rice'); }}>Basmati Rice 5kg</span>
-            <span className="tag" onClick={() => { setSearchQuery('Milk'); handleSearch('Milk'); }}>Whole Milk 1L</span>
-            <span className="tag" onClick={() => { setSearchQuery('Sugar'); handleSearch('Sugar'); }}>Cane Sugar 2kg</span>
-          </div>
+          {featuredDeals.length > 0 && (
+            <div className="trending-list">
+              <span>AVAILABLE NOW:</span>
+              {featuredDeals.slice(0, 3).map((deal) => (
+                <button
+                  key={deal.id}
+                  type="button"
+                  className="tag"
+                  onClick={() => handleCompareProduct(deal)}
+                >
+                  {deal.name}
+                </button>
+              ))}
+            </div>
+          )}
         </form>
       </section>
 
@@ -298,8 +286,7 @@ export default function LandingPage() {
                 <ProductCard
                   key={product.id}
                   product={{
-                    ...product,
-                    price: product.price || 4.5
+                    ...product
                   }}
                   onCompare={handleCompareProduct}
                 />
@@ -314,7 +301,7 @@ export default function LandingPage() {
       )}
 
       {/* Top Deals Today Section */}
-      <section className="deals-section">
+      <section id="all-deals" className="deals-section">
         <div className="section-header">
           <div className="section-title-group">
             <h2>Top Deals Today</h2>
@@ -328,14 +315,59 @@ export default function LandingPage() {
           </a>
         </div>
 
-        <div className="products-grid">
-          {mockDeals.map((deal) => (
+        {isLoadingDeals ? (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '48px' }}>
+            <div className="spinner spinner-teal"></div>
+          </div>
+        ) : dealsError ? (
+          <div className="no-results">{dealsError}</div>
+        ) : featuredDeals.length > 0 ? (
+          <div className="products-grid">
+          {featuredDeals.map((deal) => (
             <ProductCard
               key={deal.id}
               product={deal}
               onCompare={handleCompareProduct}
             />
           ))}
+          </div>
+        ) : (
+          <div className="no-results">
+            No current deals are available. Deals appear here when approved shops publish active product listings.
+          </div>
+        )}
+      </section>
+
+      <section id="about" className="about-section">
+        <div className="about-inner">
+          <div className="about-copy">
+            <span className="about-kicker">ABOUT MARKETEYE</span>
+            <h2>Clear local prices. Better shopping decisions.</h2>
+            <p>
+              MarketEye is a market price comparison and product availability platform. We connect
+              customers with current prices published by verified local shops, so finding an
+              affordable, available product takes minutes instead of visiting store after store.
+            </p>
+            <p>
+              Our work is to organize official products, verify participating shops, and display
+              their live listings side by side. Customers can compare prices and stock status,
+              while vendors can keep their own catalog accurate and up to date.
+            </p>
+          </div>
+          <div className="about-values">
+            <div className="about-value-card">
+              <strong>Real shop data</strong>
+              <span>Prices come from active listings posted by approved vendors.</span>
+            </div>
+            <div className="about-value-card">
+              <strong>Simple comparison</strong>
+              <span>See the cheapest, average, and highest price for one product.</span>
+            </div>
+            <div className="about-value-card">
+              <strong>Local availability</strong>
+              <span>Know which shop has an item in stock before you make the trip.</span>
+            </div>
+          </div>
         </div>
       </section>
 

@@ -2,10 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import adminApi from './adminApi';
 
 const navItems = [
-  { label: 'Overview', icon: '▦' },
   { label: 'Products', icon: '▣' },
   { label: 'Approvals', icon: '✓', active: true },
-  { label: 'Vendors', icon: '◫' },
   { label: 'Shops', icon: '🏪' },
   { label: 'Listings', icon: '🧾' },
   { label: 'Reporting', icon: '📊' },
@@ -19,7 +17,7 @@ const badgeClassMap = {
   Suspended: 'status-badge suspended',
 };
 
-export default function AdminApprovalPage({ onViewChange }) {
+export default function AdminApprovalPage({ onViewChange, onSignOut }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeItem, setActiveItem] = useState('Approvals');
   const [requests, setRequests] = useState([]);
@@ -71,12 +69,11 @@ export default function AdminApprovalPage({ onViewChange }) {
 
   const handleNavigate = (label) => {
     setActiveItem(label);
-    if (label === 'Products') onViewChange?.('admin-product');
-    if (label === 'Approvals') onViewChange?.('admin-approval');
-    if (label === 'Vendors') onViewChange?.('admin-vendor');
-    if (label === 'Shops') onViewChange?.('admin-shop');
-    if (label === 'Listings') onViewChange?.('admin-listings');
-    if (label === 'Overview' || label === 'Reporting' || label === 'Settings') onViewChange?.('admin-reporting');
+    if (label === 'Products') return onViewChange?.('admin-product');
+    if (label === 'Approvals') return onViewChange?.('admin-approval');
+    if (label === 'Shops') return onViewChange?.('admin-shop');
+    if (label === 'Listings') return onViewChange?.('admin-listings');
+    if (label === 'Reporting' || label === 'Settings') return onViewChange?.('admin-reporting');
   };
 
   return (
@@ -112,10 +109,10 @@ export default function AdminApprovalPage({ onViewChange }) {
       </aside>
 
       <section className="admin-approval-content">
-        <div className="admin-approval-header-row">
+        <div className="admin-reporting-header-row">
           <div>
-            <h1>Shop Approval Dashboard</h1>
-            <p>Review vendor shop registration requests and manage live public visibility in MongoDB.</p>
+            <h1>Shop Approvals</h1>
+            <p>Review vendor shop registration requests and manage live public visibility.</p>
           </div>
 
           <div className="admin-approval-searchbox">
@@ -127,6 +124,9 @@ export default function AdminApprovalPage({ onViewChange }) {
               placeholder="Search shops or vendors..."
             />
           </div>
+          <button type="button" className="admin-signout-btn" onClick={onSignOut}>
+            Sign out
+          </button>
         </div>
 
         {notice && (
@@ -218,7 +218,7 @@ export default function AdminApprovalPage({ onViewChange }) {
             ))
           ) : (
             <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-secondary)' }}>
-              No shop registrations found in MongoDB.
+              No shop registrations found.
             </div>
           )}
         </div>

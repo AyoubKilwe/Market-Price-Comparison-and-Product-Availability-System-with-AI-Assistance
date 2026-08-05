@@ -2,10 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import adminApi from './adminApi';
 
 const navItems = [
-  { label: 'Overview', icon: '▦' },
   { label: 'Products', icon: '▣', active: true },
   { label: 'Approvals', icon: '✓' },
-  { label: 'Vendors', icon: '◫' },
   { label: 'Shops', icon: '🏪' },
   { label: 'Listings', icon: '🧾' },
   { label: 'Reporting', icon: '📊' },
@@ -18,13 +16,12 @@ const statusClassName = {
   Archived: 'catalog-status archived',
 };
 
-export default function AdminProductManagementPage({ onViewChange }) {
+export default function AdminProductManagementPage({ onViewChange, onSignOut }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeItem, setActiveItem] = useState('Products');
   const [formState, setFormState] = useState({
     name: '',
     category: 'Staples & Grains',
-    unit: '5kg',
     image: '',
   });
   const [items, setItems] = useState([]);
@@ -40,7 +37,7 @@ export default function AdminProductManagementPage({ onViewChange }) {
       const data = await adminApi.getProducts();
       setItems(data.products || []);
     } catch (error) {
-      setNotice(error.message || 'Failed to load products from database.');
+      setNotice(error.message || 'Failed to load products.');
     } finally {
       setIsLoading(false);
     }
@@ -55,7 +52,7 @@ export default function AdminProductManagementPage({ onViewChange }) {
     if (!q) return items;
 
     return items.filter((item) =>
-      [item.name, item.category, item.unit, item.status].join(' ').toLowerCase().includes(q)
+      [item.name, item.category, item.status].join(' ').toLowerCase().includes(q)
     );
   }, [items, searchTerm]);
 
@@ -65,13 +62,13 @@ export default function AdminProductManagementPage({ onViewChange }) {
 
   const resetForm = () => {
     setEditingId(null);
-    setFormState({ name: '', category: 'Staples & Grains', unit: '5kg', image: '' });
+    setFormState({ name: '', category: 'Staples & Grains', image: '' });
   };
 
   const saveCatalogItem = async (e) => {
     if (e) e.preventDefault();
-    if (!formState.name.trim() || !formState.category.trim() || !formState.unit.trim()) {
-      setNotice('Please provide a Product Name, Category, and Unit.');
+    if (!formState.name.trim() || !formState.category.trim()) {
+      setNotice('Please provide a Product Name and Category.');
       return;
     }
 
@@ -82,16 +79,15 @@ export default function AdminProductManagementPage({ onViewChange }) {
       const payload = {
         name: formState.name.trim(),
         category: formState.category,
-        unit: formState.unit.trim(),
         image: formState.image.trim(),
       };
 
       if (editingId) {
         await adminApi.updateProduct(editingId, payload);
-        setNotice('Official product updated in MongoDB.');
+        setNotice('Official product updated successfully.');
       } else {
         await adminApi.createProduct(payload);
-        setNotice('Official product created in MongoDB.');
+        setNotice('Official product created successfully.');
       }
 
       resetForm();
@@ -108,10 +104,24 @@ export default function AdminProductManagementPage({ onViewChange }) {
     setFormState({
       name: item.name,
       category: item.category,
-      unit: item.unit,
       image: item.image || '',
     });
-    setNotice(`Editing "${item.name}". Update the fields and click Update Product.`);
+    setNotice(`Editing "${item.name}".`);
+  };
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 1000000) {
+        setNotice('Error: Image must be less than 1MB.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormState((prev) => ({ ...prev, image: reader.result }));
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const deleteCatalogItem = async (product) => {
@@ -119,7 +129,7 @@ export default function AdminProductManagementPage({ onViewChange }) {
 
     try {
       const res = await adminApi.deleteProduct(product._id);
-      setNotice(res.message || 'Product deleted from MongoDB.');
+      setNotice(res.message || 'Product deleted successfully.');
       if (editingId === product._id) resetForm();
       await fetchProducts();
     } catch (error) {
@@ -131,10 +141,9 @@ export default function AdminProductManagementPage({ onViewChange }) {
     setActiveItem(label);
     if (label === 'Products') onViewChange?.('admin-product');
     if (label === 'Approvals') onViewChange?.('admin-approval');
-    if (label === 'Vendors') onViewChange?.('admin-vendor');
     if (label === 'Shops') onViewChange?.('admin-shop');
     if (label === 'Listings') onViewChange?.('admin-listings');
-    if (label === 'Overview' || label === 'Reporting' || label === 'Settings') onViewChange?.('admin-reporting');
+    if (label === 'Reporting' || label === 'Settings') onViewChange?.('admin-reporting');
   };
 
   return (
@@ -180,7 +189,7 @@ export default function AdminProductManagementPage({ onViewChange }) {
         <div className="admin-product-header-row">
           <div>
             <h1>Official Product Management</h1>
-            <p>Create, update, and maintain the official product catalog in MongoDB.</p>
+            <p>Create, update, and maintain the official product catalog.</p>
           </div>
 
           <div className="admin-product-searchbox">
@@ -192,6 +201,9 @@ export default function AdminProductManagementPage({ onViewChange }) {
               placeholder="Search catalog..."
             />
           </div>
+          <button type="button" className="admin-signout-btn" onClick={onSignOut}>
+            Sign out
+          </button>
         </div>
 
         <div className="admin-product-grid">
@@ -204,7 +216,7 @@ export default function AdminProductManagementPage({ onViewChange }) {
                 type="text"
                 value={formState.name}
                 onChange={updateForm('name')}
-                placeholder="e.g. Premium Basmati Rice 5kg"
+                placeholder="e.g. Flour 5kg"
                 required
               />
             </label>
@@ -218,28 +230,26 @@ export default function AdminProductManagementPage({ onViewChange }) {
                 <option>Beverages</option>
                 <option>Electronics</option>
                 <option>Fresh Produce</option>
+                <option>Groceries</option>
+                <option>Clothing & Shoes</option>
+                <option>Home Appliances</option>
+                <option>Beauty & Cosmetics</option>
+                <option>Meat & Seafood</option>
               </select>
             </label>
 
             <label className="admin-product-field">
-              <span>Unit / Package *</span>
+              <span>Product Image</span>
               <input
-                type="text"
-                value={formState.unit}
-                onChange={updateForm('unit')}
-                placeholder="e.g. 5kg, 1L, Dozen"
-                required
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
               />
-            </label>
-
-            <label className="admin-product-field">
-              <span>Image URL (Optional)</span>
-              <input
-                type="text"
-                value={formState.image}
-                onChange={updateForm('image')}
-                placeholder="https://..."
-              />
+              {formState.image && formState.image.startsWith('data:image') && (
+                <div style={{ marginTop: '8px' }}>
+                  <img src={formState.image} alt="Preview" style={{ height: '60px', borderRadius: '4px' }} />
+                </div>
+              )}
             </label>
 
             <button type="submit" className="admin-product-save-btn" disabled={isSaving}>
@@ -274,12 +284,11 @@ export default function AdminProductManagementPage({ onViewChange }) {
           </form>
 
           <div className="admin-product-card admin-product-table-card">
-            <div className="admin-product-card-title">Database Catalog ({items.length})</div>
+            <div className="admin-product-card-title">Product Catalog ({items.length})</div>
 
-            <div className="admin-product-table-head">
+            <div className="admin-product-table-head" style={{ gridTemplateColumns: '2fr 2fr 1fr 1.5fr' }}>
               <span>Product Name</span>
               <span>Category</span>
-              <span>Unit</span>
               <span>Status</span>
               <span>Actions</span>
             </div>
@@ -290,10 +299,9 @@ export default function AdminProductManagementPage({ onViewChange }) {
               </div>
             ) : filteredItems.length > 0 ? (
               filteredItems.map((item) => (
-                <div key={item._id} className="admin-product-row">
+                <div key={item._id} className="admin-product-row" style={{ gridTemplateColumns: '2fr 2fr 1fr 1.5fr' }}>
                   <div className="admin-product-name-cell">{item.name}</div>
                   <div>{item.category}</div>
-                  <div>{item.unit}</div>
                   <div>
                     <span className={statusClassName[item.status] || 'catalog-status active'}>
                       {item.status || 'Active'}
@@ -319,7 +327,7 @@ export default function AdminProductManagementPage({ onViewChange }) {
               ))
             ) : (
               <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-secondary)' }}>
-                No products found in MongoDB. Use the form on the left to add the first official product!
+                No products found. Use the form on the left to add a new product.
               </div>
             )}
           </div>

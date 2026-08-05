@@ -1,6 +1,4 @@
-import React from 'react';
-
-export default function Footer({ onViewChange }) {
+export default function Footer({ onViewChange, onLandingSection }) {
   return (
     <footer className="footer">
       <div className="footer-inner">
@@ -9,11 +7,10 @@ export default function Footer({ onViewChange }) {
           <div>© {new Date().getFullYear()} MarketEye Analytics. All rights reserved.</div>
         </div>
         <div className="footer-links">
-          <a href="#about" className="footer-link">About Us</a>
-          <a href="#terms" className="footer-link">Terms of Service</a>
-          <a href="#privacy" className="footer-link">Privacy Policy</a>
-          <span style={{ cursor: 'pointer' }} onClick={() => onViewChange('login')} className="footer-link">Vendor Portal</span>
-          <a href="#api" className="footer-link">API Support</a>
+          <button type="button" onClick={() => onLandingSection('about')} className="footer-link">About Us</button>
+          <button type="button" onClick={() => onLandingSection('comparison-search')} className="footer-link">Compare Prices</button>
+          <button type="button" onClick={() => onViewChange('shop-catalog')} className="footer-link">Shops</button>
+          <button type="button" onClick={() => onViewChange('login')} className="footer-link">Vendor Portal</button>
         </div>
       </div>
     </footer>

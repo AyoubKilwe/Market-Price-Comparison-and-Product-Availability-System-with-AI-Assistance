@@ -9,8 +9,7 @@ const findProductForQuestion = async (question, productId) => {
   const products = await Product.find({ status: 'Active' }).limit(100);
   const normalizedQuestion = question.toLowerCase();
   return products.find((product) => {
-    const nameAndUnit = `${product.name} ${product.unit}`.toLowerCase();
-    return normalizedQuestion.includes(nameAndUnit) || normalizedQuestion.includes(product.name.toLowerCase());
+    return normalizedQuestion.includes(product.name.toLowerCase());
   });
 };
 

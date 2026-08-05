@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import AiAssistant from './components/AiAssistant';
@@ -16,7 +16,6 @@ import VendorProductListingPage from './pages/vendor/VendorProductListingPage';
 // Admin Pages
 import AdminApprovalPage from './pages/admin/AdminApprovalPage';
 import AdminProductManagementPage from './pages/admin/AdminProductManagementPage';
-import AdminVendorManagementPage from './pages/admin/AdminVendorManagementPage';
 import AdminShopManagementPage from './pages/admin/AdminShopManagementPage';
 import AdminListingsOverviewPage from './pages/admin/AdminListingsOverviewPage';
 import AdminReportingPage from './pages/admin/AdminReportingPage';
@@ -66,6 +65,13 @@ export default function App() {
     setView('landing');
   };
 
+  const handleLandingSection = (sectionId) => {
+    setView('landing');
+    window.setTimeout(() => {
+      document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 0);
+  };
+
   // Admin and vendor pages have their own sidebar — hide global navbar/footer
   const isDashboardView = view.startsWith('admin-') || view.startsWith('vendor-');
 
@@ -73,7 +79,12 @@ export default function App() {
     <div className="app-container">
       {/* Header / Navbar — hidden on dashboard views */}
       {!isDashboardView && (
-        <Navbar user={user} onSignOut={handleSignOut} onViewChange={setView} />
+        <Navbar
+          user={user}
+          onSignOut={handleSignOut}
+          onViewChange={setView}
+          onLandingSection={handleLandingSection}
+        />
       )}
 
       {/* Pages Container */}
@@ -96,12 +107,11 @@ export default function App() {
           <VendorProductListingPage user={user} onViewChange={setView} />
         )}
 
-        {view === 'admin-approval' && <AdminApprovalPage onViewChange={setView} />}
-        {view === 'admin-product' && <AdminProductManagementPage onViewChange={setView} />}
-        {view === 'admin-vendor' && <AdminVendorManagementPage onViewChange={setView} />}
-        {view === 'admin-shop' && <AdminShopManagementPage onViewChange={setView} />}
-        {view === 'admin-listings' && <AdminListingsOverviewPage onViewChange={setView} />}
-        {view === 'admin-reporting' && <AdminReportingPage onViewChange={setView} />}
+        {view === 'admin-approval' && <AdminApprovalPage onViewChange={setView} onSignOut={handleSignOut} />}
+        {view === 'admin-product' && <AdminProductManagementPage onViewChange={setView} onSignOut={handleSignOut} />}
+        {view === 'admin-shop' && <AdminShopManagementPage onViewChange={setView} onSignOut={handleSignOut} />}
+        {view === 'admin-listings' && <AdminListingsOverviewPage onViewChange={setView} onSignOut={handleSignOut} />}
+        {view === 'admin-reporting' && <AdminReportingPage onViewChange={setView} onSignOut={handleSignOut} />}
         {view === 'shop-catalog' && <ShopCatalogPage />}
       </main>
 
@@ -109,7 +119,9 @@ export default function App() {
       <AiAssistant />
 
       {/* Footer — hidden on dashboard views */}
-      {!isDashboardView && <Footer onViewChange={setView} />}
+      {!isDashboardView && (
+        <Footer onViewChange={setView} onLandingSection={handleLandingSection} />
+      )}
     </div>
   );
 }
