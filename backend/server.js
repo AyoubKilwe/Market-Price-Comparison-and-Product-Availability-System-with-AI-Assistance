@@ -13,20 +13,32 @@ const { adminRouter: adminShopRoutes, router: shopRoutes } = require('./routes/s
 const app = express();
 
 const getCorsOptions = () => {
-  const clientUrl = process.env.CLIENT_URL;
+  const clientUrls = (process.env.CLIENT_URL || '')
+    .split(',')
+    .map((url) => url.trim().replace(/\/$/, ''))
+    .filter(Boolean);
 
-  if (!clientUrl) {
+  if (!clientUrls.length) {
     throw new Error('CLIENT_URL is required');
   }
 
   return {
-    origin: clientUrl,
+    origin(origin, callback) {
+      if (!origin || clientUrls.includes(origin.replace(/\/$/, ''))) {
+        return callback(null, true);
+      }
+      return callback(new Error('Origin is not allowed by CORS'));
+    },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
   };
 };
 
 app.use(cors(getCorsOptions()));
 app.use(express.json({ limit: '5mb' }));
+
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', service: 'marketeye-api' });
+});
 
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
@@ -58,7 +70,7 @@ const shutdown = async (signal) => {
 const startServer = async () => {
   const port = Number(process.env.PORT) || 5000;
 
-  await connectDB(process.env.MONGODB_URI);
+  await connectDB(process.env.MONGODB_URI || process.env.MONGO_URL);
 
   server = app.listen(port, () => {
     console.log(`Server running on port ${port}`);
