@@ -1,0 +1,140 @@
+/* Final responsive overrides shared by every admin dashboard. */
+@media (max-width: 1200px) {
+  .admin-approval-shell,
+  .admin-product-shell,
+  .admin-reporting-shell,
+  .admin-vendor-shell {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  .admin-approval-sidebar,
+  .admin-product-sidebar,
+  .admin-reporting-sidebar,
+  .admin-vendor-sidebar {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    width: 100%;
+    height: auto;
+    min-width: 0;
+    padding: 12px 16px;
+    gap: 10px;
+    border-right: 0;
+    border-bottom: 1px solid #cbd5e1;
+    background: rgba(238, 244, 251, 0.98);
+    box-shadow: 0 5px 18px rgba(15, 23, 42, 0.1);
+    overflow: visible;
+    backdrop-filter: blur(12px);
+  }
+
+  .admin-approval-brand,
+  .admin-product-brand,
+  .admin-reporting-brand,
+  .admin-vendor-brand {
+    padding: 0;
+    margin: 0;
+    border: 0;
+    font-size: 1.25rem;
+    color: #0f172a;
+  }
+
+  .admin-approval-user-card,
+  .admin-product-user-card,
+  .admin-reporting-user-card,
+  .admin-vendor-user-card {
+    display: none;
+  }
+
+  .admin-approval-nav,
+  .admin-product-nav,
+  .admin-reporting-nav,
+  .admin-vendor-nav {
+    display: flex;
+    flex: none;
+    flex-direction: row;
+    gap: 6px;
+    width: 100%;
+    padding: 2px 0 5px;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: thin;
+  }
+
+  .admin-approval-nav-item,
+  .admin-product-nav-item,
+  .admin-reporting-nav-item,
+  .admin-vendor-nav-item {
+    flex: 0 0 auto;
+    width: auto;
+    min-height: 40px;
+    padding: 9px 12px;
+    white-space: nowrap;
+  }
+
+  .admin-approval-add-btn,
+  .admin-product-add-btn,
+  .admin-reporting-add-btn,
+  .admin-vendor-add-btn {
+    display: none;
+  }
+
+  .admin-approval-content,
+  .admin-product-content,
+  .admin-reporting-content,
+  .admin-vendor-content {
+    width: 100%;
+    min-width: 0;
+    padding: 24px 20px 40px;
+    overflow: visible;
+  }
+}
+
+@media (max-width: 700px) {
+  .admin-approval-sidebar,
+  .admin-product-sidebar,
+  .admin-reporting-sidebar,
+  .admin-vendor-sidebar {
+    padding: 10px 12px;
+  }
+
+  .admin-approval-content,
+  .admin-product-content,
+  .admin-reporting-content,
+  .admin-vendor-content {
+    padding: 20px 12px 32px;
+  }
+
+  .admin-approval-header-row,
+  .admin-product-header-row,
+  .admin-reporting-header-row,
+  .admin-vendor-header-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+  }
+
+  .admin-approval-header-row h1,
+  .admin-product-header-row h1,
+  .admin-reporting-header-row h1,
+  .admin-vendor-header-row h1 {
+    font-size: 1.55rem;
+  }
+
+  .admin-approval-searchbox,
+  .admin-product-searchbox,
+  .admin-reporting-searchbox,
+  .admin-vendor-searchbox {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .admin-product-card-title {
+    font-size: 1.35rem;
+  }
+
+  .admin-signout-btn {
+    width: 100%;
+  }
+}
