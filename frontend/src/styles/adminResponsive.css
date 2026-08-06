@@ -126,8 +126,11 @@
   .admin-product-searchbox,
   .admin-reporting-searchbox,
   .admin-vendor-searchbox {
-    width: 100%;
+    align-self: flex-start;
+    width: min(100%, 340px);
     min-width: 0;
+    min-height: 40px;
+    padding: 7px 11px;
   }
 
   .admin-product-card-title {
@@ -136,5 +139,14 @@
 
   .admin-signout-btn {
     width: 100%;
+  }
+}
+
+@media (max-width: 420px) {
+  .admin-approval-searchbox,
+  .admin-product-searchbox,
+  .admin-reporting-searchbox,
+  .admin-vendor-searchbox {
+    width: min(100%, 290px);
   }
 }
