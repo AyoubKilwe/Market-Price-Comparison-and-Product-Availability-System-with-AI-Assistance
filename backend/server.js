@@ -3,6 +3,7 @@ require('dotenv').config();
 const cors = require('cors');
 const express = require('express');
 const { connectDB, disconnectDB } = require('./config/db');
+const User = require('./models/User');
 const { errorHandler, notFound } = require('./middleware/errorMiddleware');
 const aiRoutes = require('./routes/aiRoutes');
 const { adminRouter: adminVendorRoutes, router: authRoutes } = require('./routes/authRoutes');
@@ -56,6 +57,34 @@ app.use(errorHandler);
 let server;
 let isShuttingDown = false;
 
+const ensureAdmin = async () => {
+  const email = process.env.ADMIN_EMAIL?.trim().toLowerCase();
+  const password = process.env.ADMIN_PASSWORD;
+  if (!email || !password) return;
+  if (password.length < 8) throw new Error('ADMIN_PASSWORD must be at least 8 characters');
+
+  const existingUser = await User.findOne({ email });
+  if (existingUser) {
+    if (existingUser.role !== 'Admin') {
+      existingUser.role = 'Admin';
+      existingUser.status = 'Active';
+      await existingUser.save();
+      console.log(`Existing user promoted to Admin: ${email}`);
+    }
+    return;
+  }
+
+  await User.create({
+    name: process.env.ADMIN_NAME?.trim() || 'System Admin',
+    email,
+    phone: process.env.ADMIN_PHONE?.trim() || '0000000000',
+    password,
+    role: 'Admin',
+    status: 'Active',
+  });
+  console.log(`Admin account created: ${email}`);
+};
+
 const shutdown = async (signal) => {
   if (isShuttingDown) return;
   isShuttingDown = true;
@@ -73,6 +102,7 @@ const startServer = async () => {
   const port = Number(process.env.PORT) || 5000;
 
   await connectDB(process.env.MONGODB_URI || process.env.MONGO_URL);
+  await ensureAdmin();
 
   server = app.listen(port, () => {
     console.log(`Server running on port ${port}`);
