@@ -133,7 +133,7 @@ export default function VendorShopProfilePage({ user, onViewChange, onSignOut })
   };
 
   return (
-    <div className="admin-reporting-shell">
+    <div className="admin-reporting-shell vendor-portal">
       <aside className="admin-reporting-sidebar">
         <div className="admin-reporting-brand">MarketEye Vendor</div>
 
@@ -141,7 +141,6 @@ export default function VendorShopProfilePage({ user, onViewChange, onSignOut })
           <div className="admin-reporting-avatar">{user?.name ? user.name[0].toUpperCase() : 'V'}</div>
           <div>
             <div className="admin-reporting-user-name">{user?.name || 'Vendor User'}</div>
-            <div className="admin-reporting-user-role">Merchant Account</div>
           </div>
         </div>
 
@@ -160,7 +159,7 @@ export default function VendorShopProfilePage({ user, onViewChange, onSignOut })
         </nav>
       </aside>
 
-      <section className="admin-reporting-content">
+      <section className="admin-reporting-content vendor-portal-content">
         <div className="admin-reporting-header-row">
           <div>
             <h1>Vendor Shop Profile</h1>
@@ -193,82 +192,112 @@ export default function VendorShopProfilePage({ user, onViewChange, onSignOut })
             <div className="spinner spinner-teal"></div>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="admin-product-card" style={{ maxWidth: '600px' }}>
-            <div className="admin-product-card-title">
-              {hasShop ? 'Edit Shop Information' : 'Register Your Shop'}
-            </div>
-
-            <label className="admin-product-field">
-              <span>Shop Name *</span>
-              <input
-                type="text"
-                value={formData.shopName}
-                onChange={(e) => setFormData({ ...formData, shopName: e.target.value })}
-                placeholder="e.g. Hargeisa Central Grocery"
-                required
-              />
-            </label>
-
-            <label className="admin-product-field">
-              <span>Contact Phone Number *</span>
-              <input
-                type="text"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                placeholder="e.g. +252 63 4000000"
-                required
-              />
-            </label>
-
-            <label className="admin-product-field">
-              <span>Physical Address / Market Location *</span>
-              <input
-                type="text"
-                value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                placeholder="e.g. Suuq Bacadle, Hargeisa"
-                required
-              />
-            </label>
-
-            <div className="admin-product-field">
-              <span>Shop Location</span>
-              <p className="location-help">Use your current position or click the shop's exact location on the map.</p>
-              <button type="button" className="location-button" onClick={useCurrentLocation}>Use current location</button>
-              <LocationMap
-                center={formData.latitude != null ? [formData.latitude, formData.longitude] : null}
-                markers={formData.latitude != null ? [{ id: 'shop', label: formData.shopName || 'Your shop', latitude: formData.latitude, longitude: formData.longitude }] : []}
-                onSelect={setLocation}
-                height={280}
-              />
-              {formData.latitude != null && <small className="location-coordinates">Selected: {formData.latitude.toFixed(5)}, {formData.longitude.toFixed(5)}</small>}
-            </div>
-
-            <label className="admin-product-field">
-              <span>Shop Banner Image (JPG, PNG or WebP â€” max 2 MB)</span>
-              <input
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                onChange={handleImageUpload}
-              />
-            </label>
-
-            {shopImage && (
-              <div className="shop-banner-preview-wrap">
-                <img className="shop-banner-preview" src={shopImage} alt="Shop banner preview" />
-                <button
-                  type="button"
-                  className="admin-product-clear-btn"
-                  onClick={() => setShopImage('')}
-                >
-                  Remove banner
-                </button>
+          <form onSubmit={handleSubmit} className="admin-product-card vendor-profile-card">
+            <div className="vendor-profile-card-header">
+              <div>
+                <span className="vendor-profile-eyebrow">Storefront details</span>
+                <h2>{hasShop ? 'Edit shop information' : 'Register your shop'}</h2>
+                <p>Keep your public shop details accurate and easy for customers to understand.</p>
               </div>
-            )}
+            </div>
 
-            <button type="submit" className="admin-product-save-btn" disabled={isSaving}>
-              {isSaving ? 'Saving...' : hasShop ? 'Update Shop Profile' : 'Submit Shop for Approval'}
-            </button>
+            <div className="vendor-profile-layout">
+              <section className="vendor-profile-section" aria-labelledby="shop-details-title">
+                <div className="vendor-profile-section-heading">
+                  <span className="vendor-profile-step">1</span>
+                  <div>
+                    <h3 id="shop-details-title">Basic information</h3>
+                    <p>The name and contact details customers will see.</p>
+                  </div>
+                </div>
+
+                <div className="vendor-profile-fields-grid">
+                  <label className="admin-product-field">
+                    <span>Shop name *</span>
+                    <input
+                      type="text"
+                      value={formData.shopName}
+                      onChange={(e) => setFormData({ ...formData, shopName: e.target.value })}
+                      placeholder="e.g. Hargeisa Central Grocery"
+                      required
+                    />
+                  </label>
+
+                  <label className="admin-product-field">
+                    <span>Phone number *</span>
+                    <input
+                      type="tel"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      placeholder="e.g. +252 63 4000000"
+                      required
+                    />
+                  </label>
+
+                  <label className="admin-product-field vendor-profile-wide-field">
+                    <span>Physical address *</span>
+                    <input
+                      type="text"
+                      value={formData.address}
+                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                      placeholder="e.g. Suuq Bacadle, Hargeisa"
+                      required
+                    />
+                  </label>
+
+                  <label className="admin-product-field vendor-profile-wide-field">
+                    <span>Shop banner <small>Optional · JPG, PNG or WebP · max 2 MB</small></span>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      onChange={handleImageUpload}
+                    />
+                  </label>
+                </div>
+
+                {shopImage && (
+                  <div className="vendor-profile-banner-preview">
+                    <img src={shopImage} alt="Shop banner preview" />
+                    <div>
+                      <strong>Banner preview</strong>
+                      <button type="button" onClick={() => setShopImage('')}>Remove</button>
+                    </div>
+                  </div>
+                )}
+              </section>
+
+              <section className="vendor-profile-section vendor-profile-map-section" aria-labelledby="shop-location-title">
+                <div className="vendor-profile-section-heading">
+                  <span className="vendor-profile-step">2</span>
+                  <div>
+                    <h3 id="shop-location-title">Shop location</h3>
+                    <p>Use your position or select the exact place on the map.</p>
+                  </div>
+                </div>
+
+                <button type="button" className="location-button vendor-location-button" onClick={useCurrentLocation}>
+                  Use current location
+                </button>
+                <LocationMap
+                  center={formData.latitude != null ? [formData.latitude, formData.longitude] : null}
+                  markers={formData.latitude != null ? [{ id: 'shop', label: formData.shopName || 'Your shop', latitude: formData.latitude, longitude: formData.longitude }] : []}
+                  onSelect={setLocation}
+                  height={250}
+                />
+                {formData.latitude != null && (
+                  <small className="location-coordinates vendor-location-selected">
+                    Location selected: {formData.latitude.toFixed(5)}, {formData.longitude.toFixed(5)}
+                  </small>
+                )}
+              </section>
+            </div>
+
+            <div className="vendor-profile-actions">
+              <p>{hasShop ? 'Changes will update your public storefront.' : 'Your shop will be sent for admin approval.'}</p>
+              <button type="submit" className="admin-product-save-btn" disabled={isSaving}>
+                {isSaving ? 'Saving...' : hasShop ? 'Save changes' : 'Submit shop for approval'}
+              </button>
+            </div>
           </form>
         )}
       </section>

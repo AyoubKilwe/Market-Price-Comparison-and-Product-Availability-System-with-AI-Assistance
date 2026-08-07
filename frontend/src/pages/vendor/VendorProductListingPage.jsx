@@ -157,7 +157,7 @@ export default function VendorProductListingPage({ user, onViewChange, onSignOut
   };
 
   return (
-    <div className="admin-product-shell">
+    <div className="admin-product-shell vendor-portal">
       <aside className="admin-product-sidebar">
         <div className="admin-product-brand">MarketEye Vendor</div>
 
@@ -184,7 +184,7 @@ export default function VendorProductListingPage({ user, onViewChange, onSignOut
         </nav>
       </aside>
 
-      <section className="admin-product-content">
+      <section className="admin-product-content vendor-portal-content">
         <div className="admin-product-header-row">
           <div>
             <h1>Vendor Product Price Listings</h1>
@@ -347,7 +347,7 @@ export default function VendorProductListingPage({ user, onViewChange, onSignOut
         </div>
 
         {/* Existing Listings Table */}
-        <div className="admin-product-card admin-product-table-card" style={{ marginTop: '24px' }}>
+        <div className="admin-product-card admin-product-table-card vendor-listings-table" style={{ marginTop: '24px' }}>
           <div className="admin-product-card-title">Your Active Price Listings ({listings.length})</div>
 
           <div className="admin-product-table-head">

@@ -53,14 +53,13 @@ export default function VendorPasswordPage({ user, onViewChange, onSignOut }) {
   const isError = notice && !notice.toLowerCase().includes('successfully');
 
   return (
-    <div className="admin-reporting-shell">
+    <div className="admin-reporting-shell vendor-portal">
       <aside className="admin-reporting-sidebar">
         <div className="admin-reporting-brand">MarketEye Vendor</div>
         <div className="admin-reporting-user-card">
           <div className="admin-reporting-avatar">{user?.name?.[0]?.toUpperCase() || 'V'}</div>
           <div>
             <div className="admin-reporting-user-name">{user?.name || 'Vendor'}</div>
-            <div className="admin-reporting-user-role">Merchant Account</div>
           </div>
         </div>
         <nav className="admin-reporting-nav">
@@ -78,7 +77,7 @@ export default function VendorPasswordPage({ user, onViewChange, onSignOut }) {
         </nav>
       </aside>
 
-      <section className="admin-reporting-content">
+      <section className="admin-reporting-content vendor-portal-content">
         <div className="admin-reporting-header-row">
           <div>
             <h1>Account Settings</h1>
