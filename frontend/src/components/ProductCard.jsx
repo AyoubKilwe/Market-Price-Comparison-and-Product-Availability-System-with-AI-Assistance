@@ -1,7 +1,8 @@
-import { useState } from 'react';
+﻿import { toggleFavourite, useFavouriteIds } from '../utils/favourites';
 
 export default function ProductCard({ product, onCompare }) {
-  const [isFavorite, setIsFavorite] = useState(false);
+  const favouriteIds = useFavouriteIds('product');
+  const isFavorite = favouriteIds.includes(product.id);
 
   // Helper to get matching badge classes
   const getBadgeClass = (badgeType) => {
@@ -31,9 +32,11 @@ export default function ProductCard({ product, onCompare }) {
         className="card-favorite-btn"
         onClick={(e) => {
           e.stopPropagation();
-          setIsFavorite(!isFavorite);
+          toggleFavourite('product', product.id);
         }}
         style={{ color: isFavorite ? 'var(--color-error)' : 'inherit' }}
+        aria-pressed={isFavorite}
+        aria-label={isFavorite ? `Remove ${product.name} from favourites` : `Add ${product.name} to favourites`}
       >
         <svg
           width="16"
@@ -65,7 +68,7 @@ export default function ProductCard({ product, onCompare }) {
         {product.name}
       </h3>
       <div className="card-info">
-        {product.unit} • {product.shopName || 'Multiple Shops'}
+        {product.unit} â€¢ {product.shopName || 'Multiple Shops'}
       </div>
 
       <div className="card-footer">
@@ -81,7 +84,7 @@ export default function ProductCard({ product, onCompare }) {
           type="button"
           className="card-add-btn"
           onClick={() => onCompare(product)}
-          title="Compare prices"
+        title="Compare prices"
         >
           {/* Custom comparison / plus icon */}
           <svg
@@ -101,3 +104,6 @@ export default function ProductCard({ product, onCompare }) {
     </div>
   );
 }
+
+
+

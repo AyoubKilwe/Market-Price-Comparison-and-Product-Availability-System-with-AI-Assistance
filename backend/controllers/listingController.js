@@ -85,7 +85,7 @@ const getComparisonData = async (productId) => {
     shop: { $in: approvedShopIds },
     isActive: true,
   })
-    .populate('shop', 'shopName phone address status')
+    .populate('shop', 'shopName phone address status latitude longitude')
     .sort({ price: 1 });
 
   const prices = listings.map((listing) => listing.price);

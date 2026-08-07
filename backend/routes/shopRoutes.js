@@ -20,6 +20,8 @@ const shopRules = [
   body('shopName').trim().notEmpty().withMessage('Shop name is required'),
   body('phone').trim().notEmpty().withMessage('Shop phone is required'),
   body('address').trim().notEmpty().withMessage('Shop address is required'),
+  body('latitude').optional({ nullable: true }).isFloat({ min: -90, max: 90 }).withMessage('Latitude must be between -90 and 90').toFloat(),
+  body('longitude').optional({ nullable: true }).isFloat({ min: -180, max: 180 }).withMessage('Longitude must be between -180 and 180').toFloat(),
   body('image')
     .optional({ values: 'falsy' })
     .isString()
@@ -51,4 +53,3 @@ adminRouter.get('/shops', protect, authorize('Admin'), getAllShops);
 adminRouter.get('/reporting', protect, authorize('Admin'), getReportingStats);
 
 module.exports = { adminRouter, router };
-

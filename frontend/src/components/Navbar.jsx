@@ -1,4 +1,8 @@
+﻿import { useFavouriteIds } from '../utils/favourites';
 export default function Navbar({ user, onSignOut, onViewChange, onLandingSection }) {
+  const productFavourites = useFavouriteIds('product');
+  const shopFavourites = useFavouriteIds('shop');
+  const favouriteCount = productFavourites.length + shopFavourites.length;
   return (
     <header className="navbar">
       <div className="nav-brand" onClick={() => onViewChange('landing')}>
@@ -24,7 +28,7 @@ export default function Navbar({ user, onSignOut, onViewChange, onLandingSection
       <nav className="nav-links">
         <button type="button" className="nav-link" onClick={() => onLandingSection('comparison-search')}>Comparison</button>
         <button type="button" className="nav-link" onClick={() => onViewChange('shop-catalog')}>Shops</button>
-        <button type="button" className="nav-link" onClick={() => onLandingSection('all-deals')}>Deals</button>
+        <button type="button" className="nav-link favourites-nav-link" onClick={() => onViewChange('favorites')}>♥ Favorites <span>{favouriteCount}</span></button>
       </nav>
 
       <div className="nav-actions">
@@ -65,3 +69,6 @@ export default function Navbar({ user, onSignOut, onViewChange, onLandingSection
     </header>
   );
 }
+
+
+

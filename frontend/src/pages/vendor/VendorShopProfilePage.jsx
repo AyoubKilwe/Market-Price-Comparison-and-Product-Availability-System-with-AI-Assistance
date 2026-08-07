@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import vendorApi from './vendorApi';
+import LocationMap from '../../components/LocationMap';
 
 const navItems = [
-  { label: 'Shop Profile', icon: '🏪', active: true },
-  { label: 'Manage Listings', icon: '🧾' },
-  { label: 'Settings', icon: '⚙' },
+  { label: 'Shop Profile', icon: 'ðŸª', active: true },
+  { label: 'Manage Listings', icon: 'ðŸ§¾' },
+  { label: 'Settings', icon: 'âš™' },
 ];
 
 export default function VendorShopProfilePage({ user, onViewChange, onSignOut }) {
@@ -12,6 +13,8 @@ export default function VendorShopProfilePage({ user, onViewChange, onSignOut })
     shopName: '',
     phone: '',
     address: '',
+    latitude: null,
+    longitude: null,
   });
   const [shopImage, setShopImage] = useState('');
   const [hasShop, setHasShop] = useState(false);
@@ -54,6 +57,8 @@ export default function VendorShopProfilePage({ user, onViewChange, onSignOut })
           shopName: data.shop.shopName || '',
           phone: data.shop.phone || '',
           address: data.shop.address || '',
+          latitude: data.shop.latitude ?? null,
+          longitude: data.shop.longitude ?? null,
         });
         setShopImage(data.shop.image || '');
       } else {
@@ -77,6 +82,23 @@ export default function VendorShopProfilePage({ user, onViewChange, onSignOut })
     fetchMyShop();
   }, [user]);
 
+  const setLocation = ({ latitude, longitude }) => {
+    setFormData((current) => ({ ...current, latitude, longitude }));
+    setNotice('Shop location selected. Save the profile to publish it.');
+  };
+
+  const useCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setNotice('Failed: Location is not supported by this browser. Select a point on the map.');
+      return;
+    }
+    setNotice('Finding your current location...');
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => setLocation({ latitude: coords.latitude, longitude: coords.longitude }),
+      () => setNotice('Failed: Location permission was denied. Select the shop location on the map instead.'),
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSaving(true);
@@ -88,12 +110,11 @@ export default function VendorShopProfilePage({ user, onViewChange, onSignOut })
         image: shopImage,
       };
 
-      let res;
       if (hasShop) {
-        res = await vendorApi.updateShop(payload);
+        await vendorApi.updateShop(payload);
         setNotice('Shop profile updated successfully!');
       } else {
-        res = await vendorApi.createShop(payload);
+        await vendorApi.createShop(payload);
         setHasShop(true);
         setNotice('Shop registered successfully! Awaiting admin approval.');
       }
@@ -210,8 +231,21 @@ export default function VendorShopProfilePage({ user, onViewChange, onSignOut })
               />
             </label>
 
+            <div className="admin-product-field">
+              <span>Shop Location</span>
+              <p className="location-help">Use your current position or click the shop's exact location on the map.</p>
+              <button type="button" className="location-button" onClick={useCurrentLocation}>Use current location</button>
+              <LocationMap
+                center={formData.latitude != null ? [formData.latitude, formData.longitude] : null}
+                markers={formData.latitude != null ? [{ id: 'shop', label: formData.shopName || 'Your shop', latitude: formData.latitude, longitude: formData.longitude }] : []}
+                onSelect={setLocation}
+                height={280}
+              />
+              {formData.latitude != null && <small className="location-coordinates">Selected: {formData.latitude.toFixed(5)}, {formData.longitude.toFixed(5)}</small>}
+            </div>
+
             <label className="admin-product-field">
-              <span>Shop Banner Image (JPG, PNG or WebP — max 2 MB)</span>
+              <span>Shop Banner Image (JPG, PNG or WebP â€” max 2 MB)</span>
               <input
                 type="file"
                 accept="image/jpeg,image/png,image/webp"

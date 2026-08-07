@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+﻿import { useState, useRef, useEffect } from 'react';
 import customerApi from '../pages/customer/customerApi';
 
 export default function AiAssistant() {
@@ -7,7 +7,7 @@ export default function AiAssistant() {
     {
       id: 'welcome',
       sender: 'bot',
-      text: 'Hello! I am your MarketEye assistant. Ask me about products, cheapest shops, or comparisons in Hargeisa!',
+      text: 'Hi! I can help you find products, compare prices, and discover the best local shops. What are you looking for today?',
     },
   ]);
   const [inputValue, setInputValue] = useState('');
@@ -70,7 +70,11 @@ export default function AiAssistant() {
         className="ai-trigger"
         onClick={() => setIsOpen(!isOpen)}
         title="Open AI Assistant"
+        aria-label={isOpen ? 'Close MarketEye AI' : 'Open MarketEye AI'}
       >
+        <span className="ai-trigger-spark">✦</span>
+        <span className="ai-trigger-label">Ask MarketEye</span>
+        <span className="ai-trigger-icon">
         <svg
           width="24"
           height="24"
@@ -86,6 +90,7 @@ export default function AiAssistant() {
           <circle cx="12" cy="5" r="2" />
           <path d="M12 7v4M8 15h.01M16 15h.01" />
         </svg>
+        </span>
       </button>
 
       {/* Expandable Chat Card */}
@@ -110,8 +115,8 @@ export default function AiAssistant() {
                 </svg>
               </div>
               <div>
-                <div className="ai-chat-title">MARKETEYE AI</div>
-                <div className="ai-chat-subtitle">Powered by Gemini</div>
+                <div className="ai-chat-title">MarketEye AI <span>Beta</span></div>
+                <div className="ai-chat-subtitle"><i></i> Online · Ready to help</div>
               </div>
             </div>
             <button
@@ -144,7 +149,7 @@ export default function AiAssistant() {
                 }`}
               >
                 {msg.sender === 'bot' && (
-                  <div className="chat-avatar">🤖</div>
+                  <div className="chat-avatar">✦</div>
                 )}
                 <div
                   className={`chat-bubble ${
@@ -175,7 +180,7 @@ export default function AiAssistant() {
             
             {isLoading && (
               <div className="chat-message-row message-row-bot">
-                <div className="chat-avatar">🤖</div>
+                <div className="chat-avatar">✦</div>
                 <div className="chat-bubble bubble-bot" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <span>Thinking</span>
                   <div className="spinner spinner-teal" style={{ width: '12px', height: '12px', borderHeight: '2px' }}></div>
@@ -185,6 +190,16 @@ export default function AiAssistant() {
             <div ref={messagesEndRef} />
           </div>
 
+          {messages.length === 1 && !isLoading && (
+            <div className="ai-quick-prompts">
+              <span>Try asking</span>
+              <div>
+                {['Cheapest rice near me', 'Which shops are open?', 'Compare sugar prices'].map((question) => (
+                  <button key={question} type="button" onClick={() => handleSend(question)}>{question}</button>
+                ))}
+              </div>
+            </div>
+          )}
           {/* Footer & Suggestion Pills */}
           <div className="ai-chat-footer">
             <form
@@ -227,3 +242,4 @@ export default function AiAssistant() {
     </>
   );
 }
+

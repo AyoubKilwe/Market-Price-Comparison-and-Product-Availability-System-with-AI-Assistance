@@ -11,7 +11,8 @@ const createShop = asyncHandler(async (req, res) => {
 });
 
 const getApprovedShops = asyncHandler(async (req, res) => {
-  const shops = await Shop.find({ status: 'Approved' }).sort({ shopName: 1 });
+  const shopIdsWithActiveListings = await Listing.find({ isActive: true }).distinct('shop');
+  const shops = await Shop.find({ status: 'Approved', _id: { $in: shopIdsWithActiveListings } }).sort({ shopName: 1 });
   return res.status(200).json({ shops });
 });
 
@@ -43,6 +44,8 @@ const updateMyShop = asyncHandler(async (req, res) => {
       phone: req.body.phone,
       address: req.body.address,
       image: req.body.image || '',
+      latitude: req.body.latitude,
+      longitude: req.body.longitude,
     },
     { new: true, runValidators: true }
   );
@@ -121,4 +124,3 @@ module.exports = {
   updateMyShop,
   updateShopStatus,
 };
-

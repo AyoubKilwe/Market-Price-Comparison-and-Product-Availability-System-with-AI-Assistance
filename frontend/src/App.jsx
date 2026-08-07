@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import AiAssistant from './components/AiAssistant';
@@ -7,6 +7,7 @@ import LandingPage from './pages/customer/LandingPage';
 import LoginPage from './pages/customer/LoginPage';
 import RegisterPage from './pages/customer/RegisterPage';
 import ShopCatalogPage from './pages/customer/ShopCatalogPage';
+import FavoritesPage from './pages/customer/FavoritesPage';
 
 // Vendor Pages
 import VendorShopProfilePage from './pages/vendor/VendorShopProfilePage';
@@ -72,12 +73,12 @@ export default function App() {
     }, 0);
   };
 
-  // Admin and vendor pages have their own sidebar — hide global navbar/footer
+  // Admin and vendor pages have their own sidebar â€” hide global navbar/footer
   const isDashboardView = view.startsWith('admin-') || view.startsWith('vendor-');
 
   return (
     <div className="app-container">
-      {/* Header / Navbar — hidden on dashboard views */}
+      {/* Header / Navbar â€” hidden on dashboard views */}
       {!isDashboardView && (
         <Navbar
           user={user}
@@ -89,7 +90,7 @@ export default function App() {
 
       {/* Pages Container */}
       <main style={{ flexGrow: 1 }}>
-        {view === 'landing' && <LandingPage />}
+        {view === 'landing' && <LandingPage onViewChange={setView} />}
 
         {view === 'login' && (
           <LoginPage onLoginSuccess={handleLoginSuccess} onViewChange={setView} />
@@ -117,15 +118,20 @@ export default function App() {
         {view === 'admin-listings' && <AdminListingsOverviewPage onViewChange={setView} onSignOut={handleSignOut} />}
         {view === 'admin-reporting' && <AdminReportingPage onViewChange={setView} onSignOut={handleSignOut} />}
         {view === 'shop-catalog' && <ShopCatalogPage />}
+        {view === 'favorites' && <FavoritesPage onViewChange={setView} />}
       </main>
 
       {/* AI assistant is available only on customer/public pages. */}
       {!isDashboardView && <AiAssistant />}
 
-      {/* Footer — hidden on dashboard views */}
+      {/* Footer â€” hidden on dashboard views */}
       {!isDashboardView && (
         <Footer onViewChange={setView} onLandingSection={handleLandingSection} />
       )}
     </div>
   );
 }
+
+
+
+
