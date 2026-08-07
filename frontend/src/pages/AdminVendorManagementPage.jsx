@@ -102,10 +102,6 @@ export default function AdminVendorManagementPage({ onViewChange }) {
             </button>
           ))}
         </nav>
-
-        <button type="button" className="admin-vendor-add-btn" onClick={fetchVendors}>
-          ↻ Refresh Vendors
-        </button>
       </aside>
 
       <section className="admin-vendor-content">

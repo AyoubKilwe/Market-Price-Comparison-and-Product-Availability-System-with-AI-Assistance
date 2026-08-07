@@ -128,7 +128,7 @@ export default function VendorProductListingPage({ user, onViewChange }) {
       setCurrentPrice('');
       setStockStatus('In Stock');
 
-      // Refresh listings from DB
+      // Reload listings from DB
       const listingsRes = await api.get('/api/listings/my-listings');
       setListings(listingsRes.listings || []);
     } catch (error) {

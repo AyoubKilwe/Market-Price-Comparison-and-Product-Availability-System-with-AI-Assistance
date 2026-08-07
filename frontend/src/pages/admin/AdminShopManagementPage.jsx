@@ -100,10 +100,6 @@ export default function AdminShopManagementPage({ onViewChange, onSignOut }) {
             </button>
           ))}
         </nav>
-
-        <button type="button" className="admin-vendor-add-btn" onClick={fetchShops}>
-          ↻ Refresh Shops
-        </button>
       </aside>
 
       <section className="admin-reporting-content">

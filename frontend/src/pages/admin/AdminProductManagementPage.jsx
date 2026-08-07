@@ -2,11 +2,11 @@ import React, { useEffect, useMemo, useState } from 'react';
 import adminApi from './adminApi';
 
 const navItems = [
-  { label: 'Products', icon: '▣', active: true },
-  { label: 'Approvals', icon: '✓' },
-  { label: 'Shops', icon: '🏪' },
-  { label: 'Listings', icon: '🧾' },
-  { label: 'Reporting', icon: '📊' },
+  { label: 'Products', icon: 'P', active: true },
+  { label: 'Approvals', icon: 'A' },
+  { label: 'Shops', icon: 'S' },
+  { label: 'Listings', icon: 'L' },
+  { label: 'Reporting', icon: 'R' },
 ];
 
 const statusClassName = {
@@ -154,7 +154,7 @@ export default function AdminProductManagementPage({ onViewChange, onSignOut }) 
   };
 
   return (
-    <div className="admin-product-shell">
+    <div className="admin-product-shell admin-product-clean">
       <aside className="admin-product-sidebar">
         <div className="admin-product-brand">MarketEye</div>
 
@@ -179,43 +179,27 @@ export default function AdminProductManagementPage({ onViewChange, onSignOut }) 
             </button>
           ))}
         </nav>
-
-        <button
-          type="button"
-          className="admin-product-add-btn"
-          onClick={() => {
-            resetForm();
-            setNotice('Fill out product details to create a new official product.');
-          }}
-        >
-          + New Catalog Item
-        </button>
       </aside>
 
       <section className="admin-product-content">
         <div className="admin-product-header-row">
           <div>
-            <h1>Official Product Management</h1>
-            <p>Create, update, and maintain the official product catalog.</p>
+            <span className="admin-page-eyebrow">Catalog administration</span>
+            <h1>Product Management</h1>
+            <p>Add products and keep the official catalog organized.</p>
           </div>
-
-          <div className="admin-product-searchbox">
-            <span>⌕</span>
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder="Search catalog..."
-            />
-          </div>
-          <button type="button" className="admin-signout-btn" onClick={onSignOut}>
-            Sign out
-          </button>
+          <button type="button" className="admin-signout-btn" onClick={onSignOut}>Sign out</button>
         </div>
 
         <div className="admin-product-grid">
           <form onSubmit={saveCatalogItem} className="admin-product-card">
-            <div className="admin-product-card-title">{editingId ? 'Edit Product' : 'Create Official Product'}</div>
+            <div className="admin-product-form-heading">
+              <span className="admin-product-form-step">+</span>
+              <div>
+                <h2>{editingId ? 'Edit product' : 'Add a product'}</h2>
+                <p>{editingId ? 'Update the selected catalog item.' : 'Create an item vendors can list in their shops.'}</p>
+              </div>
+            </div>
 
             <label className="admin-product-field">
               <span>Product Name *</span>
@@ -286,7 +270,21 @@ export default function AdminProductManagementPage({ onViewChange, onSignOut }) 
           </form>
 
           <div className="admin-product-card admin-product-table-card">
-            <div className="admin-product-card-title">Product Catalog ({items.length})</div>
+            <div className="admin-product-catalog-toolbar">
+              <div>
+                <h2>Product Catalog</h2>
+                <p>{filteredItems.length} of {items.length} products</p>
+              </div>
+              <label className="admin-product-searchbox">
+                <input
+                  type="search"
+                  value={searchTerm}
+                  onChange={(event) => setSearchTerm(event.target.value)}
+                  placeholder="Search products..."
+                  aria-label="Search product catalog"
+                />
+              </label>
+            </div>
 
             <div className="admin-product-table-head" style={{ gridTemplateColumns: '2fr 2fr 1fr 1.5fr' }}>
               <span>Product Name</span>

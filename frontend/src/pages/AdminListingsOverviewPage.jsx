@@ -92,10 +92,6 @@ export default function AdminListingsOverviewPage({ onViewChange }) {
             </button>
           ))}
         </nav>
-
-        <button type="button" className="admin-reporting-add-btn" onClick={fetchListings}>
-          ↻ Refresh Overview
-        </button>
       </aside>
 
       <section className="admin-reporting-content">

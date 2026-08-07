@@ -150,3 +150,87 @@
     width: min(100%, 290px);
   }
 }
+
+/* Simple light navigation for admin dashboards */
+.admin-approval-shell:not(.vendor-portal) .admin-approval-sidebar,
+.admin-product-shell:not(.vendor-portal) .admin-product-sidebar,
+.admin-reporting-shell:not(.vendor-portal) .admin-reporting-sidebar,
+.admin-vendor-shell:not(.vendor-portal) .admin-vendor-sidebar {
+  background: #ffffff;
+  color: #243342;
+  border-right: 1px solid #e2e8f0;
+  box-shadow: 5px 0 24px rgba(15, 23, 42, .05);
+}
+
+.admin-approval-shell:not(.vendor-portal) .admin-approval-brand,
+.admin-product-shell:not(.vendor-portal) .admin-product-brand,
+.admin-reporting-shell:not(.vendor-portal) .admin-reporting-brand,
+.admin-vendor-shell:not(.vendor-portal) .admin-vendor-brand {
+  color: #123b38;
+  border-bottom-color: #edf2f1;
+}
+
+.admin-approval-shell:not(.vendor-portal) .admin-approval-user-card,
+.admin-product-shell:not(.vendor-portal) .admin-product-user-card,
+.admin-reporting-shell:not(.vendor-portal) .admin-reporting-user-card,
+.admin-vendor-shell:not(.vendor-portal) .admin-vendor-user-card {
+  border-bottom: 0;
+  border-radius: 12px;
+  background: #f5f9f8;
+}
+
+.admin-approval-shell:not(.vendor-portal) .admin-approval-user-name,
+.admin-product-shell:not(.vendor-portal) .admin-product-user-name,
+.admin-reporting-shell:not(.vendor-portal) .admin-reporting-user-name,
+.admin-vendor-shell:not(.vendor-portal) .admin-vendor-user-name {
+  color: #263b39;
+}
+
+.admin-approval-shell:not(.vendor-portal) .admin-approval-user-role,
+.admin-product-shell:not(.vendor-portal) .admin-product-user-role,
+.admin-reporting-shell:not(.vendor-portal) .admin-reporting-user-role,
+.admin-vendor-shell:not(.vendor-portal) .admin-vendor-user-role {
+  color: #71817f;
+}
+
+.admin-approval-shell:not(.vendor-portal) .admin-approval-nav-item,
+.admin-product-shell:not(.vendor-portal) .admin-product-nav-item,
+.admin-reporting-shell:not(.vendor-portal) .admin-reporting-nav-item,
+.admin-vendor-shell:not(.vendor-portal) .admin-vendor-nav-item {
+  color: #526360;
+}
+
+.admin-approval-shell:not(.vendor-portal) .admin-approval-nav-item:hover,
+.admin-product-shell:not(.vendor-portal) .admin-product-nav-item:hover,
+.admin-reporting-shell:not(.vendor-portal) .admin-reporting-nav-item:hover,
+.admin-vendor-shell:not(.vendor-portal) .admin-vendor-nav-item:hover {
+  background: #f0f7f5;
+  color: #0f766e;
+}
+
+.admin-approval-shell:not(.vendor-portal) .admin-approval-nav-item.active,
+.admin-product-shell:not(.vendor-portal) .admin-product-nav-item.active,
+.admin-reporting-shell:not(.vendor-portal) .admin-reporting-nav-item.active,
+.admin-vendor-shell:not(.vendor-portal) .admin-vendor-nav-item.active {
+  background: #dff7f2;
+  color: #0f766e;
+  box-shadow: inset 3px 0 0 #0f766e;
+}
+
+@media (max-width: 1200px) {
+  .admin-approval-shell:not(.vendor-portal) .admin-approval-sidebar,
+  .admin-product-shell:not(.vendor-portal) .admin-product-sidebar,
+  .admin-reporting-shell:not(.vendor-portal) .admin-reporting-sidebar,
+  .admin-vendor-shell:not(.vendor-portal) .admin-vendor-sidebar {
+    border-right: 0;
+    border-bottom: 1px solid #e2e8f0;
+    box-shadow: 0 5px 18px rgba(15, 23, 42, .06);
+  }
+
+  .admin-approval-shell:not(.vendor-portal) .admin-approval-nav-item.active,
+  .admin-product-shell:not(.vendor-portal) .admin-product-nav-item.active,
+  .admin-reporting-shell:not(.vendor-portal) .admin-reporting-nav-item.active,
+  .admin-vendor-shell:not(.vendor-portal) .admin-vendor-nav-item.active {
+    box-shadow: inset 0 -3px 0 #0f766e;
+  }
+}

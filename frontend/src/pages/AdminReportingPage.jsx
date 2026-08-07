@@ -123,10 +123,6 @@ export default function AdminReportingPage({ onViewChange }) {
             </button>
           ))}
         </nav>
-
-        <button type="button" className="admin-reporting-add-btn" onClick={fetchReporting}>
-          ↻ Refresh Metrics
-        </button>
       </aside>
 
       <section className="admin-reporting-content">

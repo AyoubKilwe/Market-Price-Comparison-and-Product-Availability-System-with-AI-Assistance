@@ -1,4 +1,4 @@
-﻿import { Component } from 'react';
+import { Component } from 'react';
 
 export default class AppErrorBoundary extends Component {
   constructor(props) {
@@ -21,8 +21,7 @@ export default class AppErrorBoundary extends Component {
           <div>
             <strong>MarketEye</strong>
             <h1>Page could not open</h1>
-            <p>Please refresh the page. If the problem continues, clear the browser cache and try again.</p>
-            <button type="button" onClick={() => window.location.reload()}>Refresh page</button>
+            <p>Please reopen the page. If the problem continues, clear the browser cache and try again.</p>
           </div>
         </div>
       );

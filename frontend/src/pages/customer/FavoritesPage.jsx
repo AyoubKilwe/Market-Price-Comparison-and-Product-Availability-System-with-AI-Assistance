@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import customerApi from './customerApi';
 import { getFavouriteIds, setFavouriteIds, toggleFavourite } from '../../utils/favourites';
 
@@ -49,7 +49,7 @@ export default function FavoritesPage({ onViewChange }) {
 
   return (
     <main className="container favourites-page">
-      <header className="favourites-header"><span>Your saved items</span><h1>Favourites</h1><p>Always refreshed with the latest shop, product, price, and stock information.</p></header>
+      <header className="favourites-header"><span>Your saved items</span><h1>Favourites</h1><p>Always updated with the latest shop, product, price, and stock information.</p></header>
       <div className="favourites-tabs">
         <button type="button" className={tab === 'products' ? 'active' : ''} onClick={() => setTab('products')}>Products <span>{products.length}</span></button>
         <button type="button" className={tab === 'shops' ? 'active' : ''} onClick={() => setTab('shops')}>Shops <span>{shops.length}</span></button>

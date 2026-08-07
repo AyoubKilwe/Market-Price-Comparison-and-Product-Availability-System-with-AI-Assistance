@@ -105,10 +105,6 @@ export default function AdminApprovalPage({ onViewChange }) {
             </button>
           ))}
         </nav>
-
-        <button type="button" className="admin-approval-add-btn" onClick={fetchShops}>
-          ↻ Refresh List
-        </button>
       </aside>
 
       <section className="admin-approval-content">
