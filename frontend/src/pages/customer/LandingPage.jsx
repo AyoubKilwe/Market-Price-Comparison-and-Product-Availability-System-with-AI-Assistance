@@ -2,6 +2,16 @@ import { useEffect, useMemo, useState } from 'react';
 import ProductCard from '../../components/ProductCard';
 import customerApi from './customerApi';
 
+const PRICE_ALERTS_KEY = 'marketeye_price_alerts';
+
+const readSavedAlerts = () => {
+  try {
+    return JSON.parse(localStorage.getItem(PRICE_ALERTS_KEY) || '[]');
+  } catch {
+    return [];
+  }
+};
+
 export default function LandingPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
@@ -12,6 +22,8 @@ export default function LandingPage() {
   const [isLoadingDeals, setIsLoadingDeals] = useState(true);
   const [dealsError, setDealsError] = useState('');
   const [selectedDealCategory, setSelectedDealCategory] = useState('All');
+  const [priceAlerts, setPriceAlerts] = useState(readSavedAlerts);
+  const [alertMessage, setAlertMessage] = useState('');
 
   const dealCategories = useMemo(
     () => ['All', ...new Set(featuredDeals.map((deal) => deal.category).filter(Boolean))],
@@ -48,6 +60,84 @@ export default function LandingPage() {
 
     loadFeaturedDeals();
   }, []);
+
+  useEffect(() => {
+    const checkSavedAlerts = async () => {
+      const savedAlerts = readSavedAlerts();
+      if (!savedAlerts.length) return;
+
+      const checkedAlerts = await Promise.all(
+        savedAlerts.map(async (alert) => {
+          try {
+            const comparison = await customerApi.getProductListings(alert.productId);
+            const currentPrice = comparison.summary?.lowest;
+            const previousPrice = Number(alert.lastPrice);
+            const priceChanged = currentPrice != null &&
+              Number.isFinite(previousPrice) &&
+              currentPrice !== previousPrice;
+
+            if (priceChanged) {
+              const message = `${alert.productName} price changed from $${previousPrice.toFixed(2)} to $${currentPrice.toFixed(2)}.`;
+              setAlertMessage(message);
+
+              if ('Notification' in window && Notification.permission === 'granted') {
+                new Notification('MarketEye Price Alert', { body: message });
+              }
+
+              return {
+                ...alert,
+                previousPrice,
+                lastPrice: currentPrice,
+              };
+            }
+
+            return currentPrice == null ? alert : { ...alert, lastPrice: currentPrice };
+          } catch {
+            return alert;
+          }
+        })
+      );
+
+      localStorage.setItem(PRICE_ALERTS_KEY, JSON.stringify(checkedAlerts));
+      setPriceAlerts(checkedAlerts);
+    };
+
+    checkSavedAlerts();
+    const alertCheckInterval = window.setInterval(checkSavedAlerts, 30000);
+
+    return () => window.clearInterval(alertCheckInterval);
+  }, []);
+
+  const savePriceAlert = async () => {
+    const product = selectedProductComparison?.product;
+    const currentPrice = selectedProductComparison?.summary?.lowest;
+    if (!product?._id || !Number.isFinite(currentPrice)) return;
+
+    const newAlert = {
+      productId: product._id,
+      productName: product.name,
+      lastPrice: currentPrice,
+    };
+    const nextAlerts = [
+      ...priceAlerts.filter((alert) => alert.productId !== product._id),
+      newAlert,
+    ];
+
+    localStorage.setItem(PRICE_ALERTS_KEY, JSON.stringify(nextAlerts));
+    setPriceAlerts(nextAlerts);
+    setAlertMessage(`MarketEye is tracking ${product.name} from $${currentPrice.toFixed(2)}.`);
+
+    if ('Notification' in window && Notification.permission === 'default') {
+      await Notification.requestPermission();
+    }
+  };
+
+  const removePriceAlert = (productId) => {
+    const nextAlerts = priceAlerts.filter((alert) => alert.productId !== productId);
+    localStorage.setItem(PRICE_ALERTS_KEY, JSON.stringify(nextAlerts));
+    setPriceAlerts(nextAlerts);
+    setAlertMessage('Price alert removed.');
+  };
 
   // Perform search on backend API
   const handleSearch = async (queryText) => {
@@ -116,6 +206,15 @@ export default function LandingPage() {
 
   return (
     <div className="main-content">
+      {alertMessage && (
+        <div className="price-alert-notice" role="status">
+          <span>{alertMessage}</span>
+          <button type="button" onClick={() => setAlertMessage('')} aria-label="Close notification">
+            Close
+          </button>
+        </div>
+      )}
+
       {/* Hero Section */}
       <section id="comparison-search" className="hero-section">
         <h1 className="hero-title">
@@ -193,15 +292,27 @@ export default function LandingPage() {
                 Comparing current prices and selling quantities across registered shops
               </p>
             </div>
-            <button
-              type="button"
-              className="comparison-close-btn"
-              onClick={() => setSelectedProductComparison(null)}
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="M18 6 6 18M6 6l12 12" />
-              </svg>
-            </button>
+            <div className="comparison-actions">
+              <button
+                type="button"
+                className="price-alert-button"
+                onClick={savePriceAlert}
+                disabled={!Number.isFinite(selectedProductComparison.summary?.lowest)}
+              >
+                {priceAlerts.some((alert) => alert.productId === selectedProductComparison.product._id)
+                  ? 'Price Alert On'
+                  : 'Track Price Drops'}
+              </button>
+              <button
+                type="button"
+                className="comparison-close-btn"
+                onClick={() => setSelectedProductComparison(null)}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M18 6 6 18M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
           </div>
 
           {selectedProductComparison.listings && selectedProductComparison.listings.length > 0 ? (
@@ -273,6 +384,39 @@ export default function LandingPage() {
               No active listings found for this product. Approved vendors have not posted stock yet.
             </div>
           )}
+        </section>
+      )}
+
+      {priceAlerts.length > 0 && (
+        <section className="saved-alerts-section" aria-labelledby="saved-alerts-title">
+          <div>
+            <span className="about-kicker">PRICE ALERTS</span>
+            <h2 id="saved-alerts-title">Your saved alerts</h2>
+            <p>MarketEye notifies you whenever a saved product price changes.</p>
+          </div>
+          <div className="saved-alerts-list">
+            {priceAlerts.map((alert) => (
+              <div className="saved-alert-item" key={alert.productId}>
+                <div>
+                  <strong>{alert.productName}</strong>
+                  {Number.isFinite(Number(alert.previousPrice)) ? (
+                    <span>
+                      Previous price: ${Number(alert.previousPrice).toFixed(2)} · New price: ${Number(alert.lastPrice).toFixed(2)}
+                    </span>
+                  ) : (
+                    <span>
+                      Current price: ${Number.isFinite(Number(alert.lastPrice))
+                        ? Number(alert.lastPrice).toFixed(2)
+                        : 'not recorded'}
+                    </span>
+                  )}
+                </div>
+                <button type="button" onClick={() => removePriceAlert(alert.productId)}>
+                  Remove
+                </button>
+              </div>
+            ))}
+          </div>
         </section>
       )}
 
