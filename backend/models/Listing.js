@@ -21,7 +21,15 @@ const listingSchema = new mongoose.Schema(
       required: [true, 'Stock status is required'],
     },
     isActive: { type: Boolean, default: true },
-  }
+    priceHistory: [
+      {
+        price: { type: Number, required: true },
+        stockStatus: { type: String },
+        timestamp: { type: Date, default: Date.now },
+      },
+    ],
+  },
+  { timestamps: true }
 );
 
 listingSchema.index({ product: 1, shop: 1 }, { unique: true });

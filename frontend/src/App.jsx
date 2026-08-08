@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import AiAssistant from './components/AiAssistant';
@@ -15,6 +15,7 @@ import VendorProductListingPage from './pages/vendor/VendorProductListingPage';
 import VendorPasswordPage from './pages/vendor/VendorPasswordPage';
 
 // Admin Pages
+import AdminMarketMonitoringPage from './pages/admin/AdminMarketMonitoringPage';
 import AdminApprovalPage from './pages/admin/AdminApprovalPage';
 import AdminProductManagementPage from './pages/admin/AdminProductManagementPage';
 import AdminShopManagementPage from './pages/admin/AdminShopManagementPage';
@@ -52,7 +53,7 @@ export default function App() {
     if (normalizedRole === 'vendor') {
       setView('vendor-profile');
     } else if (normalizedRole === 'admin') {
-      setView('admin-product');
+      setView('admin-market-monitoring');
     } else {
       setView('landing');
     }
@@ -112,6 +113,7 @@ export default function App() {
           <VendorPasswordPage user={user} onViewChange={setView} onSignOut={handleSignOut} />
         )}
 
+        {view === 'admin-market-monitoring' && <AdminMarketMonitoringPage onViewChange={setView} onSignOut={handleSignOut} />}
         {view === 'admin-approval' && <AdminApprovalPage onViewChange={setView} onSignOut={handleSignOut} />}
         {view === 'admin-product' && <AdminProductManagementPage onViewChange={setView} onSignOut={handleSignOut} />}
         {view === 'admin-shop' && <AdminShopManagementPage onViewChange={setView} onSignOut={handleSignOut} />}
@@ -131,7 +133,3 @@ export default function App() {
     </div>
   );
 }
-
-
-
-
