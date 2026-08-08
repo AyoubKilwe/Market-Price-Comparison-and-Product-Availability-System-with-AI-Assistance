@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 import React, { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -14,6 +15,31 @@ import AdminShopManagementPage from './pages/AdminShopManagementPage';
 import AdminListingsOverviewPage from './pages/AdminListingsOverviewPage';
 import AdminReportingPage from './pages/AdminReportingPage';
 import ShopCatalogPage from './pages/ShopCatalogPage';
+=======
+import { useState, useEffect } from 'react';
+import Navbar from './components/Navbar';
+import Footer from './components/Footer';
+import AiAssistant from './components/AiAssistant';
+// Customer / Public Pages
+import LandingPage from './pages/customer/LandingPage';
+import LoginPage from './pages/customer/LoginPage';
+import RegisterPage from './pages/customer/RegisterPage';
+import ShopCatalogPage from './pages/customer/ShopCatalogPage';
+import FavoritesPage from './pages/customer/FavoritesPage';
+
+// Vendor Pages
+import VendorShopProfilePage from './pages/vendor/VendorShopProfilePage';
+import VendorProductListingPage from './pages/vendor/VendorProductListingPage';
+import VendorPasswordPage from './pages/vendor/VendorPasswordPage';
+
+// Admin Pages
+import AdminMarketMonitoringPage from './pages/admin/AdminMarketMonitoringPage';
+import AdminApprovalPage from './pages/admin/AdminApprovalPage';
+import AdminProductManagementPage from './pages/admin/AdminProductManagementPage';
+import AdminShopManagementPage from './pages/admin/AdminShopManagementPage';
+import AdminListingsOverviewPage from './pages/admin/AdminListingsOverviewPage';
+import AdminReportingPage from './pages/admin/AdminReportingPage';
+>>>>>>> Stashed changes
 
 export default function App() {
   const [view, setView] = useState('landing');
@@ -46,7 +72,7 @@ export default function App() {
     if (normalizedRole === 'vendor') {
       setView('vendor-profile');
     } else if (normalizedRole === 'admin') {
-      setView('admin-product');
+      setView('admin-market-monitoring');
     } else {
       setView('landing');
     }
@@ -85,12 +111,25 @@ export default function App() {
           <VendorProductListingPage user={user} onViewChange={setView} />
         )}
 
+<<<<<<< Updated upstream
         {view === 'admin-approval' && <AdminApprovalPage onViewChange={setView} />}
         {view === 'admin-product' && <AdminProductManagementPage onViewChange={setView} />}
         {view === 'admin-vendor' && <AdminVendorManagementPage onViewChange={setView} />}
         {view === 'admin-shop' && <AdminShopManagementPage onViewChange={setView} />}
         {view === 'admin-listings' && <AdminListingsOverviewPage onViewChange={setView} />}
         {view === 'admin-reporting' && <AdminReportingPage onViewChange={setView} />}
+=======
+        {view === 'vendor-settings' && (
+          <VendorPasswordPage user={user} onViewChange={setView} onSignOut={handleSignOut} />
+        )}
+
+        {view === 'admin-market-monitoring' && <AdminMarketMonitoringPage onViewChange={setView} onSignOut={handleSignOut} />}
+        {view === 'admin-approval' && <AdminApprovalPage onViewChange={setView} onSignOut={handleSignOut} />}
+        {view === 'admin-product' && <AdminProductManagementPage onViewChange={setView} onSignOut={handleSignOut} />}
+        {view === 'admin-shop' && <AdminShopManagementPage onViewChange={setView} onSignOut={handleSignOut} />}
+        {view === 'admin-listings' && <AdminListingsOverviewPage onViewChange={setView} onSignOut={handleSignOut} />}
+        {view === 'admin-reporting' && <AdminReportingPage onViewChange={setView} onSignOut={handleSignOut} />}
+>>>>>>> Stashed changes
         {view === 'shop-catalog' && <ShopCatalogPage />}
       </main>
 

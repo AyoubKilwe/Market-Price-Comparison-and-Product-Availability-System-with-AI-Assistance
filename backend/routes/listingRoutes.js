@@ -5,6 +5,11 @@ const {
   createListing,
   deleteListing,
   getAllListings,
+<<<<<<< Updated upstream
+=======
+  getFeaturedListings,
+  getMarketMonitoringData,
+>>>>>>> Stashed changes
   getMyListings,
   getShopListings,
   updateListing,
@@ -68,5 +73,6 @@ router.get(
 );
 
 adminRouter.get('/listings', protect, authorize('Admin'), getAllListings);
+adminRouter.get('/market-monitoring', protect, authorize('Admin'), getMarketMonitoringData);
 
 module.exports = { adminRouter, router };
