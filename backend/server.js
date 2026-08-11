@@ -10,6 +10,7 @@ const { adminRouter: adminVendorRoutes, router: authRoutes } = require('./routes
 const { adminRouter: adminListingRoutes, router: listingRoutes } = require('./routes/listingRoutes');
 const productRoutes = require('./routes/productRoutes');
 const { adminRouter: adminShopRoutes, router: shopRoutes } = require('./routes/shopRoutes');
+const priceAlertRoutes = require('./routes/priceAlertRoutes');
 
 const app = express();
 
@@ -46,6 +47,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/shops', shopRoutes);
 app.use('/api/listings', listingRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/price-alerts', priceAlertRoutes);
 app.use('/api/admin', adminVendorRoutes);
 app.use('/api/admin', adminShopRoutes);
 app.use('/api/admin', adminListingRoutes);

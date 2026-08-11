@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import ProductCard from '../../components/ProductCard';
 import customerApi from './customerApi';
 import { toggleFavourite, useFavouriteIds } from '../../utils/favourites';
+import { announcePriceAlertChange, priceAlertApi, usePriceAlertSummary } from '../../utils/priceAlerts';
 
 const PRICE_ALERTS_KEY = 'marketeye_price_alerts';
 
@@ -32,6 +33,7 @@ export default function LandingPage({ onViewChange }) {
   const [priceAlerts, setPriceAlerts] = useState(readSavedAlerts);
   const [alertMessage, setAlertMessage] = useState('');
   const favouriteShopIds = useFavouriteIds('shop');
+  const { alertIds } = usePriceAlertSummary();
 
   useEffect(() => {
     customerApi.getApprovedShops()
@@ -135,17 +137,21 @@ export default function LandingPage({ onViewChange }) {
       ...priceAlerts.filter((alert) => alert.productId !== product._id),
       { productId: product._id, productName: product.name, lastPrice: currentPrice },
     ];
+    await priceAlertApi.addAlert(product._id);
     localStorage.setItem(PRICE_ALERTS_KEY, JSON.stringify(nextAlerts));
     setPriceAlerts(nextAlerts);
+    announcePriceAlertChange();
     setAlertMessage('MarketEye is tracking ' + product.name + ' from $' + currentPrice.toFixed(2) + '.');
     if ('Notification' in window && Notification.permission === 'default') await Notification.requestPermission();
   };
 
-  const removePriceAlert = (productId) => {
+  const removePriceAlert = async (productId) => {
+    await priceAlertApi.removeAlert(productId);
     const nextAlerts = priceAlerts.filter((alert) => alert.productId !== productId);
     localStorage.setItem(PRICE_ALERTS_KEY, JSON.stringify(nextAlerts));
     setPriceAlerts(nextAlerts);
     setAlertMessage('Price alert removed.');
+    announcePriceAlertChange();
   };
 
   return (
@@ -201,7 +207,7 @@ export default function LandingPage({ onViewChange }) {
       </section>
       <section id="products" className="simple-products-section">
         <div className="simple-section-heading"><div><span>Available now</span><h2>Products and prices</h2></div><label className="simple-product-search"><span>Search</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search products" /></label></div>
-        {isLoading ? <div className="no-results">Loading products...</div> : shownProducts.length > 0 ? <div className="products-grid">{shownProducts.map((product) => <ProductCard key={product.id} product={product} onCompare={compare} />)}</div> : <div className="no-results">No matching products found.</div>}
+        {isLoading ? <div className="no-results">Loading products...</div> : shownProducts.length > 0 ? <div className="products-grid">{shownProducts.map((product) => <ProductCard key={product.id} product={product} onCompare={compare} alertIds={alertIds} />)}</div> : <div className="no-results">No matching products found.</div>}
       </section>
 
       {selectedProduct && <section id="simple-comparison" className="simple-comparison">
@@ -242,7 +248,6 @@ export default function LandingPage({ onViewChange }) {
         </section>
       )}
 
-      <section className="simple-landing-bottom"><div><strong>Nearby shops</strong><span>See stores ordered by distance.</span></div><div><strong>Current prices</strong><span>Compare active shop listings.</span></div><div><strong>Stock status</strong><span>Know what is available.</span></div></section>
     </main>
   );
 }

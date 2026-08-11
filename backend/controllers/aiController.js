@@ -93,7 +93,7 @@ const ask = asyncHandler(async (req, res) => {
 
   if (!products.length) {
     return res.status(200).json({
-      answer: 'MarketEye does not currently have matching product information for that question.',
+      answer: 'Product-kan hadda MarketEye kama heli karo. Fadlan hubi magaca product-ka ama isku day product kale.',
     });
   }
 
@@ -101,7 +101,7 @@ const ask = asyncHandler(async (req, res) => {
     .filter(Boolean);
   if (!comparisons.length) {
     return res.status(200).json({
-      answer: 'MarketEye does not currently have active information for those products.',
+      answer: 'Product-kan hadda qiimo active ah kama hayno. Fadlan mar kale dib u hubi ama isku day product kale.',
     });
   }
 

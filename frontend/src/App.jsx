@@ -8,6 +8,7 @@ import LoginPage from './pages/customer/LoginPage';
 import RegisterPage from './pages/customer/RegisterPage';
 import ShopCatalogPage from './pages/customer/ShopCatalogPage';
 import FavoritesPage from './pages/customer/FavoritesPage';
+import PriceAlertsPage from './pages/customer/PriceAlertsPage';
 
 // Vendor Pages
 import VendorShopProfilePage from './pages/vendor/VendorShopProfilePage';
@@ -15,7 +16,6 @@ import VendorProductListingPage from './pages/vendor/VendorProductListingPage';
 import VendorPasswordPage from './pages/vendor/VendorPasswordPage';
 
 // Admin Pages
-import AdminMarketMonitoringPage from './pages/admin/AdminMarketMonitoringPage';
 import AdminApprovalPage from './pages/admin/AdminApprovalPage';
 import AdminProductManagementPage from './pages/admin/AdminProductManagementPage';
 import AdminShopManagementPage from './pages/admin/AdminShopManagementPage';
@@ -53,7 +53,7 @@ export default function App() {
     if (normalizedRole === 'vendor') {
       setView('vendor-profile');
     } else if (normalizedRole === 'admin') {
-      setView('admin-market-monitoring');
+      setView('admin-reporting');
     } else {
       setView('landing');
     }
@@ -113,7 +113,6 @@ export default function App() {
           <VendorPasswordPage user={user} onViewChange={setView} onSignOut={handleSignOut} />
         )}
 
-        {view === 'admin-market-monitoring' && <AdminMarketMonitoringPage onViewChange={setView} onSignOut={handleSignOut} />}
         {view === 'admin-approval' && <AdminApprovalPage onViewChange={setView} onSignOut={handleSignOut} />}
         {view === 'admin-product' && <AdminProductManagementPage onViewChange={setView} onSignOut={handleSignOut} />}
         {view === 'admin-shop' && <AdminShopManagementPage onViewChange={setView} onSignOut={handleSignOut} />}
@@ -121,6 +120,7 @@ export default function App() {
         {view === 'admin-reporting' && <AdminReportingPage onViewChange={setView} onSignOut={handleSignOut} />}
         {view === 'shop-catalog' && <ShopCatalogPage />}
         {view === 'favorites' && <FavoritesPage onViewChange={setView} />}
+        {view === 'price-alerts' && <PriceAlertsPage />}
       </main>
 
       {/* AI assistant is available only on customer/public pages. */}

@@ -7,7 +7,6 @@ export default function Footer({ onViewChange, onLandingSection }) {
           <div>© {new Date().getFullYear()} MarketEye Analytics. All rights reserved.</div>
         </div>
         <div className="footer-links">
-          <button type="button" onClick={() => onLandingSection('about')} className="footer-link">About Us</button>
           <button type="button" onClick={() => onLandingSection('comparison-search')} className="footer-link">Compare Prices</button>
           <button type="button" onClick={() => onViewChange('shop-catalog')} className="footer-link">Shops</button>
           <button type="button" onClick={() => onViewChange('login')} className="footer-link">Vendor Portal</button>

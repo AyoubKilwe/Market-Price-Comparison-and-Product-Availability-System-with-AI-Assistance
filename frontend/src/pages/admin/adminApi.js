@@ -7,7 +7,6 @@ export const adminApi = {
   updateVendorStatus: (vendorId, status) => api.patch(`/api/admin/vendors/${vendorId}/status`, { status }),
   getListings: () => api.get('/api/admin/listings'),
   getReporting: () => api.get('/api/admin/reporting'),
-  getMarketMonitoring: (params) => api.get('/api/admin/market-monitoring', { params }),
   getProducts: () => api.get('/api/products'),
   createProduct: (productData) => api.post('/api/products', productData),
   updateProduct: (id, productData) => api.put(`/api/products/${id}`, productData),

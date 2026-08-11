@@ -1,8 +1,17 @@
-﻿import { toggleFavourite, useFavouriteIds } from '../utils/favourites';
+import { toggleFavourite, useFavouriteIds } from '../utils/favourites';
+import { announcePriceAlertChange, priceAlertApi } from '../utils/priceAlerts';
 
-export default function ProductCard({ product, onCompare }) {
+export default function ProductCard({ product, onCompare, alertIds = [] }) {
   const favouriteIds = useFavouriteIds('product');
   const isFavorite = favouriteIds.includes(product.id);
+  const isAlertOn = alertIds.includes(product.id);
+
+  const togglePriceAlert = async (event) => {
+    event.stopPropagation();
+    if (isAlertOn) await priceAlertApi.removeAlert(product.id);
+    else await priceAlertApi.addAlert(product.id);
+    announcePriceAlertChange();
+  };
 
   // Helper to get matching badge classes
   const getBadgeClass = (badgeType) => {
@@ -70,6 +79,17 @@ export default function ProductCard({ product, onCompare }) {
       <div className="card-info">
         {product.unit} â€¢ {product.shopName || 'Multiple Shops'}
       </div>
+
+      <button
+        type="button"
+        className={`product-alert-action ${isAlertOn ? 'active' : ''}`}
+        onClick={togglePriceAlert}
+        disabled={!Number.isFinite(product.price)}
+        aria-pressed={isAlertOn}
+      >
+        <span aria-hidden="true">♢</span>
+        {isAlertOn ? 'Price Alert On' : 'Set Price Alert'}
+      </button>
 
       <div className="card-footer">
         <div className="price-box">

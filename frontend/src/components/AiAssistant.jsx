@@ -1,4 +1,4 @@
-﻿import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import customerApi from '../pages/customer/customerApi';
 
 export default function AiAssistant() {
@@ -190,17 +190,7 @@ export default function AiAssistant() {
             <div ref={messagesEndRef} />
           </div>
 
-          {messages.length === 1 && !isLoading && (
-            <div className="ai-quick-prompts">
-              <span>Try asking</span>
-              <div>
-                {['Cheapest rice near me', 'Which shops are open?', 'Compare sugar prices'].map((question) => (
-                  <button key={question} type="button" onClick={() => handleSend(question)}>{question}</button>
-                ))}
-              </div>
-            </div>
-          )}
-          {/* Footer & Suggestion Pills */}
+          {/* Footer */}
           <div className="ai-chat-footer">
             <form
               onSubmit={(e) => {

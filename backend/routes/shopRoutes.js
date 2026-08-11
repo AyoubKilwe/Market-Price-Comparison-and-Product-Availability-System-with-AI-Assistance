@@ -13,6 +13,7 @@ const {
 const protect = require('../middleware/authMiddleware');
 const authorize = require('../middleware/roleMiddleware');
 const validate = require('../middleware/validateMiddleware');
+const { getAnalytics } = require('../controllers/adminAnalyticsController');
 
 const router = express.Router();
 const adminRouter = express.Router();
@@ -50,6 +51,6 @@ router.patch(
 router.get('/:id', param('id').isMongoId().withMessage('A valid shop ID is required'), validate, getShop);
 
 adminRouter.get('/shops', protect, authorize('Admin'), getAllShops);
-adminRouter.get('/reporting', protect, authorize('Admin'), getReportingStats);
+adminRouter.get('/reporting', protect, authorize('Admin'), getAnalytics);
 
 module.exports = { adminRouter, router };

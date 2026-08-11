@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import adminApi from './adminApi';
 
 const navItems = [
-  { label: 'Market Monitoring', icon: '📈' },
   { label: 'Products', icon: '▣', active: true },
   { label: 'Approvals', icon: '✓' },
   { label: 'Shops', icon: '🏪' },
@@ -147,7 +146,6 @@ export default function AdminProductManagementPage({ onViewChange, onSignOut }) 
 
   const handleNavigate = (label) => {
     setActiveItem(label);
-    if (label === 'Market Monitoring') onViewChange?.('admin-market-monitoring');
     if (label === 'Products') onViewChange?.('admin-product');
     if (label === 'Approvals') onViewChange?.('admin-approval');
     if (label === 'Shops') onViewChange?.('admin-shop');
