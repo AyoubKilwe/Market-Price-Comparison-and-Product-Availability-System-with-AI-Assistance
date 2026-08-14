@@ -556,3 +556,173 @@
 /* Clean customer mobile layout */
 @media(max-width:768px){.simple-landing-hero,.landing-shops-section,.simple-products-section{padding-left:16px;padding-right:16px}.simple-landing-hero{gap:24px;padding-top:44px;padding-bottom:44px}.fresh-hero-copy h1{font-size:clamp(34px,10vw,48px);line-height:1.08}.fresh-hero-copy>p{font-size:15px;line-height:1.65}.simple-hero-actions{gap:12px}.simple-section-heading{gap:14px}.simple-section-heading h2{font-size:27px}.customer-shops-page{padding-left:16px;padding-right:16px}.customer-shops-header h1{font-size:32px}.price-alerts-page,.favourites-page{padding-left:16px;padding-right:16px}.price-alerts-header h1,.favourites-header h1{font-size:32px}.tracked-product-card{overflow:hidden}.price-notifications>article{align-items:start}.ai-chat-card{max-height:calc(100dvh - 100px)}}
 @media(max-width:600px){.fresh-hero-visual{display:none}.fresh-hero{padding-top:38px;padding-bottom:38px;text-align:left}.fresh-hero-copy .simple-hero-kicker{font-size:8px}.fresh-hero-copy h1{font-size:36px}.fresh-hero-trust{justify-content:flex-start}.simple-hero-actions{text-align:left}.simple-hero-actions>*{width:100%;justify-content:center}.landing-shops-section{padding-top:36px;padding-bottom:40px}.customer-shop-card{display:block}.customer-shop-card-image{height:150px;min-height:0}.customer-shop-card-body{padding:14px}.customer-shop-card p{margin-bottom:12px}.selected-shop-heading{align-items:flex-start}.selected-shop-heading h2{font-size:22px}.simple-products-section,.simple-comparison{padding:34px 14px}.simple-comparison-heading{align-items:flex-start;gap:12px;flex-direction:column}.comparison-actions{width:100%}.price-alert-button{flex:1}.favourites-tabs{overflow:hidden}.favourites-tabs button{padding:8px 9px;font-size:11px}.price-alerts-header button{width:100%}.tracked-product-card{grid-template-columns:48px minmax(0,1fr)}.tracked-product-image{width:48px;height:48px}.tracked-product-card>strong{grid-column:2}.tracked-product-card>button{grid-column:2;justify-self:stretch}.price-notifications>article{grid-template-columns:36px minmax(0,1fr)}.notification-change-icon{width:36px;height:36px}.price-notifications article p{overflow-wrap:anywhere}.ai-trigger{right:12px;bottom:12px}.ai-chat-card{right:8px;bottom:76px;width:calc(100vw - 16px);height:calc(100dvh - 92px)}}
+/* Clear, customer-friendly product price comparison */
+.comparison-panel { overflow: hidden; border: 1px solid #dbe5e3; border-radius: 24px; background: linear-gradient(180deg,#fff 0%,#fbfdfd 100%); box-shadow: 0 22px 55px rgba(15,23,42,.09); }
+.comparison-panel .simple-comparison-heading { align-items: flex-start; gap: 24px; padding-bottom: 22px; border-bottom: 1px solid #e8efee; }
+.comparison-panel .simple-comparison-heading p { margin: 7px 0 0; color: #64748b; font-size: 13px; }
+.comparison-price-summary { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px; margin: 22px 0 14px; }
+.comparison-price-card { position: relative; min-width: 0; padding: 22px; overflow: hidden; border: 1px solid; border-radius: 18px; }
+.comparison-lowest-card { border-color: #99f6e4; background: linear-gradient(135deg,#f0fdfa,#ecfdf5); }
+.comparison-highest-card { border-color: #fed7aa; background: linear-gradient(135deg,#fff7ed,#fffbeb); }
+.comparison-card-top { display: flex; align-items: center; gap: 9px; }
+.comparison-card-icon { display: grid; width: 28px; height: 28px; place-items: center; border-radius: 9px; background: #fff; font-size: 17px; font-weight: 900; box-shadow: 0 4px 12px rgba(15,23,42,.07); }
+.comparison-lowest-card .comparison-card-icon { color: #0f766e; }
+.comparison-highest-card .comparison-card-icon { color: #c2410c; }
+.comparison-card-label { color: #475569; font-size: 12px; font-weight: 900; letter-spacing: .04em; text-transform: uppercase; }
+.comparison-card-top em { margin-left: auto; padding: 5px 9px; border-radius: 999px; background: #0d9488; color: #fff; font-size: 9px; font-style: normal; font-weight: 900; text-transform: uppercase; }
+.comparison-price-card > strong { display: block; margin-top: 14px; color: #0f172a; font-size: clamp(30px,4vw,42px); line-height: 1; letter-spacing: -.04em; }
+.comparison-price-card > p { margin: 9px 0 0; color: #64748b; font-size: 12px; }
+.comparison-savings-note { display: flex; align-items: center; gap: 10px; margin-bottom: 22px; padding: 11px 14px; border: 1px solid #bbf7d0; border-radius: 12px; background: #f0fdf4; color: #166534; }
+.comparison-savings-note > span { display: grid; flex: 0 0 24px; width: 24px; height: 24px; place-items: center; border-radius: 50%; background: #16a34a; color: #fff; font-size: 12px; font-weight: 900; }
+.comparison-savings-note p { margin: 0; font-size: 12px; }
+.comparison-list-heading { display: grid; grid-template-columns: minmax(0,1fr) 150px 100px; gap: 16px; padding: 0 16px 8px; color: #94a3b8; font-size: 9px; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
+.comparison-list-heading span:last-child { text-align: right; }
+.comparison-panel .simple-comparison-list { gap: 9px; }
+.comparison-panel .simple-comparison-list > div { grid-template-columns: minmax(0,1fr) 150px 100px; align-items: center; gap: 16px; padding: 15px 16px; border: 1px solid #e8efee; background: #fff; }
+.comparison-panel .simple-comparison-list > div.best-price-row { border-color: #5eead4; background: #f0fdfa; box-shadow: inset 4px 0 0 #0d9488; }
+.comparison-panel .simple-comparison-list strong { display: flex; min-width: 0; align-items: center; gap: 9px; color: #0f172a; }
+.comparison-panel .simple-comparison-list strong small { flex: 0 0 auto; padding: 3px 7px; border-radius: 999px; background: #ccfbf1; color: #0f766e; font-size: 8px; font-weight: 900; text-transform: uppercase; }
+.comparison-stock { justify-self: start; padding: 5px 9px; border-radius: 999px; background: #f1f5f9; color: #475569; font-size: 10px; font-weight: 800; }
+.comparison-stock.in-stock { background: #dcfce7; color: #15803d; }
+.comparison-stock.low-stock { background: #fef3c7; color: #b45309; }
+.comparison-stock.out-of-stock { background: #fee2e2; color: #b91c1c; }
+.comparison-panel .simple-comparison-list b { justify-self: end; color: #0f766e; font-size: 17px; }
+@media (max-width: 600px) {
+  .comparison-price-summary { grid-template-columns: 1fr; }
+  .comparison-list-heading { display: none; }
+  .comparison-panel .simple-comparison-list > div { grid-template-columns: minmax(0,1fr) auto; gap: 9px 12px; }
+  .comparison-panel .simple-comparison-list strong { align-items: flex-start; flex-direction: column; gap: 5px; }
+  .comparison-stock { grid-column: 1; grid-row: 2; }
+  .comparison-panel .simple-comparison-list b { grid-column: 2; grid-row: 1 / span 2; align-self: center; }
+}
+/* Compact comparison layout */
+.comparison-panel {
+  width: min(calc(100% - 32px), 880px);
+  margin: 28px auto 44px;
+  padding: 22px;
+  border-radius: 18px;
+  box-shadow: 0 12px 32px rgba(15,23,42,.08);
+}
+.comparison-panel .simple-comparison-heading {
+  margin-bottom: 0;
+  padding-bottom: 15px;
+}
+.comparison-panel .simple-comparison-heading h2 {
+  margin-top: 3px;
+  font-size: 22px;
+}
+.comparison-panel .simple-comparison-heading p {
+  margin-top: 4px;
+  font-size: 11px;
+}
+.comparison-panel .comparison-actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.comparison-panel .price-alert-button {
+  min-height: 36px;
+  padding: 7px 11px;
+  font-size: 10px;
+}
+.comparison-panel .comparison-close-btn {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  place-items: center;
+  border-radius: 9px;
+  background: #f1f5f9;
+  font-size: 15px;
+}
+.comparison-panel .comparison-price-summary {
+  gap: 10px;
+  margin: 14px 0 10px;
+}
+.comparison-panel .comparison-price-card {
+  padding: 14px 16px;
+  border-radius: 13px;
+}
+.comparison-panel .comparison-card-icon {
+  width: 23px;
+  height: 23px;
+  border-radius: 7px;
+  font-size: 13px;
+}
+.comparison-panel .comparison-card-label { font-size: 9px; }
+.comparison-panel .comparison-card-top em {
+  padding: 3px 7px;
+  font-size: 7px;
+}
+.comparison-panel .comparison-price-card > strong {
+  margin-top: 9px;
+  font-size: 28px;
+}
+.comparison-panel .comparison-price-card > p {
+  margin-top: 5px;
+  font-size: 10px;
+}
+.comparison-panel .comparison-savings-note {
+  gap: 8px;
+  margin-bottom: 14px;
+  padding: 8px 11px;
+  border-radius: 9px;
+}
+.comparison-panel .comparison-savings-note > span {
+  width: 20px;
+  height: 20px;
+  flex-basis: 20px;
+  font-size: 9px;
+}
+.comparison-panel .comparison-savings-note p { font-size: 10px; }
+.comparison-panel .comparison-list-heading {
+  grid-template-columns: minmax(0,1fr) 120px 76px;
+  gap: 10px;
+  padding: 0 12px 6px;
+  font-size: 8px;
+}
+.comparison-panel .simple-comparison-list { gap: 6px; }
+.comparison-panel .simple-comparison-list > div {
+  grid-template-columns: minmax(0,1fr) 120px 76px;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+}
+.comparison-panel .simple-comparison-list strong { font-size: 12px; }
+.comparison-panel .simple-comparison-list strong small {
+  padding: 2px 5px;
+  font-size: 7px;
+}
+.comparison-panel .comparison-stock {
+  padding: 4px 7px;
+  font-size: 8px;
+}
+.comparison-panel .simple-comparison-list b { font-size: 14px; }
+@media (max-width: 600px) {
+  .comparison-panel {
+    width: calc(100% - 24px);
+    margin-block: 20px 34px;
+    padding: 15px;
+  }
+  .comparison-panel .simple-comparison-heading {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .comparison-panel .simple-comparison-heading p { display: none; }
+  .comparison-panel .comparison-actions { margin-left: auto; }
+  .comparison-panel .price-alert-button { display: none; }
+  .comparison-panel .comparison-price-summary {
+    grid-template-columns: repeat(2,minmax(0,1fr));
+    gap: 7px;
+  }
+  .comparison-panel .comparison-price-card { padding: 11px; }
+  .comparison-panel .comparison-card-icon { display: none; }
+  .comparison-panel .comparison-card-top em { display: none; }
+  .comparison-panel .comparison-price-card > strong { font-size: 23px; }
+  .comparison-panel .comparison-price-card > p {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}

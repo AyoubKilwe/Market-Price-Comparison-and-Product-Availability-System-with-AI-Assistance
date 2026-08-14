@@ -210,18 +210,41 @@ export default function LandingPage({ onViewChange }) {
         {isLoading ? <div className="no-results">Loading products...</div> : shownProducts.length > 0 ? <div className="products-grid">{shownProducts.map((product) => <ProductCard key={product.id} product={product} onCompare={compare} alertIds={alertIds} />)}</div> : <div className="no-results">No matching products found.</div>}
       </section>
 
-      {selectedProduct && <section id="simple-comparison" className="simple-comparison">
-        <div className="simple-comparison-heading">
-          <div><span>Price comparison</span><h2>{selectedProduct.product?.name}</h2></div>
-          <div className="comparison-actions">
-            <button type="button" className="price-alert-button" onClick={savePriceAlert} disabled={!Number.isFinite(selectedProduct.summary?.lowest)}>
-              {priceAlerts.some((alert) => alert.productId === selectedProduct.product?._id) ? 'Price Alert On' : 'Track Price Drops'}
-            </button>
-            <button type="button" className="comparison-close-btn" onClick={() => setSelectedProduct(null)}>X</button>
+      {selectedProduct && (() => {
+        const listings = [...(selectedProduct.listings || [])].sort((a, b) => a.price - b.price);
+        const lowestListing = listings[0];
+        const highestListing = listings[listings.length - 1];
+        const savings = listings.length > 1 ? highestListing.price - lowestListing.price : 0;
+
+        return <section id="simple-comparison" className="simple-comparison comparison-panel">
+          <div className="simple-comparison-heading">
+            <div><span>Price comparison</span><h2>{selectedProduct.product?.name}</h2><p>Compare every available shop and choose the best price.</p></div>
+            <div className="comparison-actions">
+              <button type="button" className="price-alert-button" onClick={savePriceAlert} disabled={!Number.isFinite(selectedProduct.summary?.lowest)}>
+                {priceAlerts.some((alert) => alert.productId === selectedProduct.product?._id) ? 'Price Alert On' : 'Track Price Drops'}
+              </button>
+              <button type="button" className="comparison-close-btn" onClick={() => setSelectedProduct(null)}>X</button>
+            </div>
           </div>
-        </div>
-        {selectedProduct.listings?.length > 0 ? <div className="simple-comparison-list">{selectedProduct.listings.map((item) => <div key={item._id}><strong>{item.shop?.shopName}</strong><span>{item.stockStatus}</span><b>${item.price.toFixed(2)}</b></div>)}</div> : <div className="no-results">This product is not available right now.</div>}
-      </section>}
+          {listings.length > 0 ? <>
+            <div className="comparison-price-summary">
+              <article className="comparison-price-card comparison-lowest-card">
+                <div className="comparison-card-top"><span className="comparison-card-icon">↓</span><span className="comparison-card-label">Lowest price</span><em>Best deal</em></div>
+                <strong>${lowestListing.price.toFixed(2)}</strong>
+                <p>at {lowestListing.shop?.shopName || 'Vendor shop'}</p>
+              </article>
+              <article className="comparison-price-card comparison-highest-card">
+                <div className="comparison-card-top"><span className="comparison-card-icon">↑</span><span className="comparison-card-label">Highest price</span></div>
+                <strong>${highestListing.price.toFixed(2)}</strong>
+                <p>at {highestListing.shop?.shopName || 'Vendor shop'}</p>
+              </article>
+            </div>
+            {savings > 0 && <div className="comparison-savings-note"><span>✓</span><p>Choose the lowest price and save <strong>${savings.toFixed(2)}</strong>.</p></div>}
+            <div className="comparison-list-heading"><span>Shop</span><span>Availability</span><span>Price</span></div>
+            <div className="simple-comparison-list">{listings.map((item, index) => <div className={index === 0 ? 'best-price-row' : ''} key={item._id}><strong>{item.shop?.shopName || 'Vendor shop'}{index === 0 && <small>Best price</small>}</strong><span className={`comparison-stock ${item.stockStatus?.toLowerCase().replaceAll(' ', '-') || ''}`}>{item.stockStatus}</span><b>${item.price.toFixed(2)}</b></div>)}</div>
+          </> : <div className="no-results">This product is not available right now.</div>}
+        </section>;
+      })()}
 
       {priceAlerts.length > 0 && (
         <section className="saved-alerts-section" aria-labelledby="saved-alerts-title">
