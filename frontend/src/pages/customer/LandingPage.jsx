@@ -7,7 +7,7 @@ import { announcePriceAlertChange, priceAlertApi, usePriceAlertSummary } from '.
 const PRICE_ALERTS_KEY = 'marketeye_price_alerts';
 
 const BASE_CATEGORIES = [
-  { id: 'All', label: 'Dhammaan', en: 'All Products', icon: '✨' },
+  { id: 'All', label: 'All Products', en: 'All Products', icon: '✨' },
   { id: 'Raashin', label: 'Raashin', en: 'Groceries', icon: '🍚' },
   { id: 'Alaabta Guriga', label: 'Alaabta Guriga', en: 'Household', icon: '🧼' },
   { id: 'Sharaab', label: 'Sharaab', en: 'Beverages', icon: '🧃' },
@@ -329,7 +329,7 @@ export default function LandingPage({ onViewChange }) {
       <section id="products" className="simple-products-section">
         <div className="simple-section-heading">
           <div>
-            <span className="products-kicker">Qeybaha Alaabta & Qiimaha</span>
+            <span className="products-kicker">Categories & Prices</span>
             <h2>Products and prices</h2>
           </div>
           <label className="simple-product-search">
@@ -337,7 +337,7 @@ export default function LandingPage({ onViewChange }) {
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search products (e.g. Bariis, Sonkor)..."
+              placeholder="Search products (e.g. Rice, Oil)..."
             />
             {search && (
               <button type="button" className="clear-search-btn" onClick={() => setSearch('')} title="Clear search">
@@ -350,14 +350,14 @@ export default function LandingPage({ onViewChange }) {
         {/* Stunning Category Navigation Pills */}
         <div className="category-filter-wrapper">
           <div className="category-filter-header">
-            <span className="category-filter-title">Dooro Qeybta (Filter by Category):</span>
+            <span className="category-filter-title">Filter by Category:</span>
             {selectedCategory !== 'All' && (
               <button
                 type="button"
                 className="category-reset-link"
                 onClick={() => setSelectedCategory('All')}
               >
-                Tus Dhammaan ({allProducts.length}) &times;
+                Show All ({allProducts.length}) &times;
               </button>
             )}
           </div>
@@ -405,11 +405,11 @@ export default function LandingPage({ onViewChange }) {
         ) : (
           <div className="category-empty-state">
             <span className="empty-icon">{getCategoryIcon(selectedCategory)}</span>
-            <h3>Wax alaab ah lagama helin qeybta "{selectedCategory}"</h3>
+            <h3>No products found in "{selectedCategory}"</h3>
             <p>
               {search.trim()
-                ? `Ma jiro wax u dhigma "${search}" qeybtan dhexdeeda.`
-                : 'Qeybtaan wali alaab laguma darin ama lama shaacin.'}
+                ? `No products matching "${search}" in this category.`
+                : 'There are currently no products available in this category.'}
             </p>
             <div className="empty-actions">
               {selectedCategory !== 'All' && (
@@ -421,7 +421,7 @@ export default function LandingPage({ onViewChange }) {
                     setSearch('');
                   }}
                 >
-                  Tus dhammaan alaabta ({allProducts.length})
+                  View all products ({allProducts.length})
                 </button>
               )}
             </div>
