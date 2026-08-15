@@ -6,6 +6,34 @@ import { announcePriceAlertChange, priceAlertApi, usePriceAlertSummary } from '.
 
 const PRICE_ALERTS_KEY = 'marketeye_price_alerts';
 
+const BASE_CATEGORIES = [
+  { id: 'All', label: 'Dhammaan', en: 'All Products', icon: '✨' },
+  { id: 'Raashin', label: 'Raashin', en: 'Groceries', icon: '🍚' },
+  { id: 'Alaabta Guriga', label: 'Alaabta Guriga', en: 'Household', icon: '🧼' },
+  { id: 'Sharaab', label: 'Sharaab', en: 'Beverages', icon: '🧃' },
+  { id: 'Khudaar iyo Miro', label: 'Khudaar & Miro', en: 'Fruits & Veggies', icon: '🥑' },
+  { id: 'Hilib iyo Kalluun', label: 'Hilib & Kalluun', en: 'Meat & Fish', icon: '🥩' },
+];
+
+const CATEGORY_ICON_MAP = {
+  all: '✨',
+  raashin: '🍚',
+  'alaabta guriga': '🧼',
+  sharaab: '🧃',
+  'khudaar iyo miro': '🥑',
+  khudaar: '🥬',
+  miro: '🍎',
+  'hilib iyo kalluun': '🥩',
+  hilib: '🍖',
+  kalluun: '🐟',
+  default: '📦',
+};
+
+const getCategoryIcon = (categoryName = '') => {
+  const normalized = categoryName.trim().toLowerCase();
+  return CATEGORY_ICON_MAP[normalized] || CATEGORY_ICON_MAP.default;
+};
+
 const readSavedAlerts = () => {
   try {
     return JSON.parse(localStorage.getItem(PRICE_ALERTS_KEY) || '[]');
@@ -24,8 +52,9 @@ const getDistance = (from, shop) => {
 
 export default function LandingPage({ onViewChange }) {
   const [search, setSearch] = useState('');
-  const [deals, setDeals] = useState([]);
-  const [results, setResults] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [allProducts, setAllProducts] = useState([]);
+  const [searchResults, setSearchResults] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [shops, setShops] = useState([]);
@@ -39,6 +68,7 @@ export default function LandingPage({ onViewChange }) {
     customerApi.getApprovedShops()
       .then((data) => setShops(data.shops || []))
       .catch(() => setShops([]));
+
     navigator.geolocation?.getCurrentPosition(
       ({ coords }) => setLocation({ latitude: coords.latitude, longitude: coords.longitude }),
       () => {},
@@ -46,24 +76,65 @@ export default function LandingPage({ onViewChange }) {
     );
   }, []);
 
+  // Fetch initial products and featured deals
   useEffect(() => {
-    customerApi.getFeaturedListings()
-      .then((data) => setDeals((data.deals || []).map(({ product, listing, shopCount }) => ({
-        id: product._id,
-        name: product.name,
-        unit: listing.unit || product.unit,
-        category: product.category,
-        image: product.image,
-        price: listing.price,
-        shopName: `${shopCount} ${shopCount === 1 ? 'shop' : 'shops'}`,
-      }))))
+    setIsLoading(true);
+    Promise.all([
+      customerApi.getFeaturedListings().catch(() => ({ deals: [] })),
+      customerApi.getProducts().catch(() => ({ products: [] })),
+    ])
+      .then(([featuredData, productsData]) => {
+        const dealsMap = new Map();
+        (featuredData.deals || []).forEach(({ product, listing, shopCount }) => {
+          if (!product?._id) return;
+          dealsMap.set(product._id.toString(), {
+            price: listing.price,
+            unit: listing.unit || product.unit,
+            shopName: `${shopCount} ${shopCount === 1 ? 'shop' : 'shops'}`,
+            image: product.image,
+            category: product.category,
+            name: product.name,
+          });
+        });
+
+        // Combine official products with listing price info
+        const productsList = (productsData.products || []).map((prod) => {
+          const deal = dealsMap.get(prod._id.toString());
+          return {
+            id: prod._id,
+            name: prod.name,
+            unit: deal?.unit || prod.unit || '1 xabo',
+            category: prod.category || 'Raashin',
+            image: prod.image,
+            price: deal ? deal.price : null,
+            shopName: deal ? deal.shopName : 'Available in shops',
+          };
+        });
+
+        // If official products list was empty, fallback directly to featured deals
+        if (productsList.length === 0 && (featuredData.deals || []).length > 0) {
+          const fallback = (featuredData.deals || []).map(({ product, listing, shopCount }) => ({
+            id: product._id,
+            name: product.name,
+            unit: listing.unit || product.unit || '1 xabo',
+            category: product.category || 'Raashin',
+            image: product.image,
+            price: listing.price,
+            shopName: `${shopCount} ${shopCount === 1 ? 'shop' : 'shops'}`,
+          }));
+          setAllProducts(fallback);
+        } else {
+          setAllProducts(productsList);
+        }
+      })
       .finally(() => setIsLoading(false));
   }, []);
 
+  // Search effect
   useEffect(() => {
     const query = search.trim();
     if (query.length < 2) {
-      Promise.resolve().then(() => setResults([]));
+      setSearchResults(null);
       return;
     }
     const timer = window.setTimeout(async () => {
@@ -72,18 +143,24 @@ export default function LandingPage({ onViewChange }) {
         const formatted = await Promise.all((data.products || []).map(async (product) => {
           const comparison = await customerApi.getProductListings(product._id).catch(() => null);
           return {
-            id: product._id, name: product.name, unit: product.unit || product.category,
-            category: product.category, image: product.image,
+            id: product._id,
+            name: product.name,
+            unit: product.unit || '1 xabo',
+            category: product.category || 'Raashin',
+            image: product.image,
             price: comparison?.summary?.lowest ?? null,
             shopName: comparison?.listings?.length ? `${comparison.listings.length} shops` : 'Not available',
           };
         }));
-        setResults(formatted);
-      } catch { setResults([]); }
+        setSearchResults(formatted);
+      } catch {
+        setSearchResults([]);
+      }
     }, 300);
     return () => window.clearTimeout(timer);
   }, [search]);
 
+  // Price alert background checker
   useEffect(() => {
     const checkSavedAlerts = async () => {
       const savedAlerts = readSavedAlerts();
@@ -114,14 +191,53 @@ export default function LandingPage({ onViewChange }) {
     return () => window.clearInterval(intervalId);
   }, []);
 
-  const nearbyShops = useMemo(() => shops.map((shop) => ({ ...shop, distance: location && Number.isFinite(shop.latitude) && Number.isFinite(shop.longitude) ? getDistance(location, shop) : null })).sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity)).slice(0, 6), [shops, location]);
+  const nearbyShops = useMemo(() => shops.map((shop) => ({
+    ...shop,
+    distance: location && Number.isFinite(shop.latitude) && Number.isFinite(shop.longitude) ? getDistance(location, shop) : null,
+  })).sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity)).slice(0, 6), [shops, location]);
 
   const openShop = (shopId) => {
     sessionStorage.setItem('marketeye_selected_shop', shopId);
     onViewChange?.('shop-catalog');
   };
 
-  const shownProducts = useMemo(() => search.trim().length >= 2 ? results : deals.slice(0, 8), [search, results, deals]);
+  // Build dynamic categories list and count available products
+  const categoriesWithCounts = useMemo(() => {
+    const baseList = [...BASE_CATEGORIES];
+    const presentCategories = new Set(allProducts.map((p) => p.category?.trim()).filter(Boolean));
+
+    // Add any category from DB that isn't in base list
+    presentCategories.forEach((cat) => {
+      if (!baseList.some((b) => b.id.toLowerCase() === cat.toLowerCase())) {
+        baseList.push({
+          id: cat,
+          label: cat,
+          en: cat,
+          icon: getCategoryIcon(cat),
+        });
+      }
+    });
+
+    return baseList.map((cat) => {
+      let count = 0;
+      if (cat.id === 'All') {
+        count = allProducts.length;
+      } else {
+        count = allProducts.filter((p) => (p.category || '').trim().toLowerCase() === cat.id.toLowerCase()).length;
+      }
+      return { ...cat, count };
+    });
+  }, [allProducts]);
+
+  // Compute products shown based on category filter and search
+  const shownProducts = useMemo(() => {
+    const sourceProducts = searchResults !== null ? searchResults : allProducts;
+
+    return sourceProducts.filter((product) => {
+      if (selectedCategory === 'All') return true;
+      return (product.category || '').trim().toLowerCase() === selectedCategory.trim().toLowerCase();
+    });
+  }, [searchResults, allProducts, selectedCategory]);
 
   const compare = async (product) => {
     const data = await customerApi.getProductListings(product.id).catch(() => null);
@@ -162,6 +278,8 @@ export default function LandingPage({ onViewChange }) {
           <button type="button" onClick={() => setAlertMessage('')} aria-label="Close notification">X</button>
         </div>
       )}
+
+      {/* Hero Section */}
       <section className="simple-landing-hero fresh-hero">
         <div className="simple-hero-copy fresh-hero-copy">
           <span className="simple-hero-kicker"><i></i> Local prices, made simple</span>
@@ -182,6 +300,7 @@ export default function LandingPage({ onViewChange }) {
         </div>
       </section>
 
+      {/* Nearby Shops Showcase */}
       <section className="landing-shops-section">
         <div className="simple-section-heading">
           <div><span>Closest first</span><h2>Nearby shops</h2></div>
@@ -192,12 +311,12 @@ export default function LandingPage({ onViewChange }) {
             {nearbyShops.map((shop, index) => (
               <div className="shop-card-shell" key={shop._id}>
                 <button type="button" className="customer-shop-card" onClick={() => openShop(shop._id)}>
-                <div className="customer-shop-card-image">{shop.image ? <img src={shop.image} alt="" /> : <span>{shop.shopName?.[0] || 'S'}</span>}</div>
-                <div className="customer-shop-card-body">
-                  <div className="customer-shop-card-top"><h2>{shop.shopName}</h2>{index === 0 && shop.distance != null && <span className="closest-label">Closest</span>}</div>
-                  <p>{shop.address}</p><span className="shop-card-phone"><b>Tel</b> Phone: {shop.phone || 'Not provided'}</span>
-                  <div className="customer-shop-card-footer"><strong>{shop.distance != null ? `${shop.distance.toFixed(1)} km away` : 'Location needed'}</strong><span>View products &rarr;</span></div>
-                </div>
+                  <div className="customer-shop-card-image">{shop.image ? <img src={shop.image} alt="" /> : <span>{shop.shopName?.[0] || 'S'}</span>}</div>
+                  <div className="customer-shop-card-body">
+                    <div className="customer-shop-card-top"><h2>{shop.shopName}</h2>{index === 0 && shop.distance != null && <span className="closest-label">Closest</span>}</div>
+                    <p>{shop.address}</p><span className="shop-card-phone"><b>Tel</b> Phone: {shop.phone || 'Not provided'}</span>
+                    <div className="customer-shop-card-footer"><strong>{shop.distance != null ? `${shop.distance.toFixed(1)} km away` : 'Location needed'}</strong><span>View products &rarr;</span></div>
+                  </div>
                 </button>
                 <button type="button" className={`shop-favourite-btn ${favouriteShopIds.includes(shop._id) ? 'active' : ''}`} onClick={() => toggleFavourite('shop', shop._id)} aria-label={favouriteShopIds.includes(shop._id) ? `Remove ${shop.shopName} from favourites` : `Add ${shop.shopName} to favourites`} aria-pressed={favouriteShopIds.includes(shop._id)}>&#9829;</button>
               </div>
@@ -205,59 +324,205 @@ export default function LandingPage({ onViewChange }) {
           </div>
         ) : <div className="no-results">Loading nearby shops...</div>}
       </section>
+
+      {/* Products & Prices with Interactive Category Filter */}
       <section id="products" className="simple-products-section">
-        <div className="simple-section-heading"><div><span>Available now</span><h2>Products and prices</h2></div><label className="simple-product-search"><span>Search</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search products" /></label></div>
-        {isLoading ? <div className="no-results">Loading products...</div> : shownProducts.length > 0 ? <div className="products-grid">{shownProducts.map((product) => <ProductCard key={product.id} product={product} onCompare={compare} alertIds={alertIds} />)}</div> : <div className="no-results">No matching products found.</div>}
+        <div className="simple-section-heading">
+          <div>
+            <span className="products-kicker">Qeybaha Alaabta & Qiimaha</span>
+            <h2>Products and prices</h2>
+          </div>
+          <label className="simple-product-search">
+            <span className="search-icon">🔍</span>
+            <input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search products (e.g. Bariis, Sonkor)..."
+            />
+            {search && (
+              <button type="button" className="clear-search-btn" onClick={() => setSearch('')} title="Clear search">
+                ×
+              </button>
+            )}
+          </label>
+        </div>
+
+        {/* Stunning Category Navigation Pills */}
+        <div className="category-filter-wrapper">
+          <div className="category-filter-header">
+            <span className="category-filter-title">Dooro Qeybta (Filter by Category):</span>
+            {selectedCategory !== 'All' && (
+              <button
+                type="button"
+                className="category-reset-link"
+                onClick={() => setSelectedCategory('All')}
+              >
+                Tus Dhammaan ({allProducts.length}) &times;
+              </button>
+            )}
+          </div>
+
+          <div className="category-pills-container" role="tablist" aria-label="Product categories">
+            {categoriesWithCounts.map((cat) => {
+              const isSelected = selectedCategory.toLowerCase() === cat.id.toLowerCase();
+              return (
+                <button
+                  type="button"
+                  key={cat.id}
+                  role="tab"
+                  aria-selected={isSelected}
+                  className={`category-pill-btn ${isSelected ? 'active' : ''}`}
+                  onClick={() => setSelectedCategory(cat.id)}
+                >
+                  <span className="category-pill-icon">{cat.icon}</span>
+                  <span className="category-pill-label">{cat.label}</span>
+                  {cat.count > 0 && (
+                    <span className="category-pill-count">{cat.count}</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Products Grid or Empty State */}
+        {isLoading ? (
+          <div className="products-loading-state">
+            <div className="loading-spinner"></div>
+            <span>Loading products and prices...</span>
+          </div>
+        ) : shownProducts.length > 0 ? (
+          <div className="products-grid">
+            {shownProducts.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                onCompare={compare}
+                alertIds={alertIds}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="category-empty-state">
+            <span className="empty-icon">{getCategoryIcon(selectedCategory)}</span>
+            <h3>Wax alaab ah lagama helin qeybta "{selectedCategory}"</h3>
+            <p>
+              {search.trim()
+                ? `Ma jiro wax u dhigma "${search}" qeybtan dhexdeeda.`
+                : 'Qeybtaan wali alaab laguma darin ama lama shaacin.'}
+            </p>
+            <div className="empty-actions">
+              {selectedCategory !== 'All' && (
+                <button
+                  type="button"
+                  className="empty-reset-btn"
+                  onClick={() => {
+                    setSelectedCategory('All');
+                    setSearch('');
+                  }}
+                >
+                  Tus dhammaan alaabta ({allProducts.length})
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </section>
 
+      {/* Comparison Drawer / Modal */}
       {selectedProduct && (() => {
         const listings = [...(selectedProduct.listings || [])].sort((a, b) => a.price - b.price);
         const lowestListing = listings[0];
         const highestListing = listings[listings.length - 1];
         const savings = listings.length > 1 ? highestListing.price - lowestListing.price : 0;
 
-        return <section id="simple-comparison" className="simple-comparison comparison-panel">
-          <div className="simple-comparison-heading">
-            <div><span>Price comparison</span><h2>{selectedProduct.product?.name}</h2><p>Compare every available shop and choose the best price.</p></div>
-            <div className="comparison-actions">
-              <button type="button" className="price-alert-button" onClick={savePriceAlert} disabled={!Number.isFinite(selectedProduct.summary?.lowest)}>
-                {priceAlerts.some((alert) => alert.productId === selectedProduct.product?._id) ? 'Price Alert On' : 'Track Price Drops'}
-              </button>
-              <button type="button" className="comparison-close-btn" onClick={() => setSelectedProduct(null)}>X</button>
+        return (
+          <section id="simple-comparison" className="simple-comparison comparison-panel">
+            <div className="simple-comparison-heading">
+              <div>
+                <span>Price comparison</span>
+                <h2>{selectedProduct.product?.name}</h2>
+                <p>Compare every available shop and choose the best price.</p>
+              </div>
+              <div className="comparison-actions">
+                <button
+                  type="button"
+                  className="price-alert-button"
+                  onClick={savePriceAlert}
+                  disabled={!Number.isFinite(selectedProduct.summary?.lowest)}
+                >
+                  {priceAlerts.some((alert) => alert.productId === selectedProduct.product?._id)
+                    ? 'Price Alert On'
+                    : 'Track Price Drops'}
+                </button>
+                <button
+                  type="button"
+                  className="comparison-close-btn"
+                  onClick={() => setSelectedProduct(null)}
+                >
+                  X
+                </button>
+              </div>
             </div>
-          </div>
-          {listings.length > 0 ? <>
-            <div className="comparison-price-summary">
-              <article className="comparison-price-card comparison-lowest-card">
-                <div className="comparison-card-top"><span className="comparison-card-icon">↓</span><span className="comparison-card-label">Lowest price</span><em>Best deal</em></div>
-                <strong>${lowestListing.price.toFixed(2)}</strong>
-                <p>at {lowestListing.shop?.shopName || 'Vendor shop'}</p>
-              </article>
-              <article className="comparison-price-card comparison-highest-card">
-                <div className="comparison-card-top"><span className="comparison-card-icon">↑</span><span className="comparison-card-label">Highest price</span></div>
-                <strong>${highestListing.price.toFixed(2)}</strong>
-                <p>at {highestListing.shop?.shopName || 'Vendor shop'}</p>
-              </article>
-            </div>
-            {savings > 0 && <div className="comparison-savings-note"><span>✓</span><p>Choose the lowest price and save <strong>${savings.toFixed(2)}</strong>.</p></div>}
-            <div className="comparison-list-heading"><span>Shop</span><span>Availability</span><span>Price</span></div>
-            <div className="simple-comparison-list">
-              {listings.map((item, index) => (
-                <div className={index === 0 ? 'best-price-row' : ''} key={item._id}>
-                  <div className="comparison-shop-details">
-                    <strong>{item.shop?.shopName || 'Vendor shop'}{index === 0 && <small>Best price</small>}</strong>
-                    {item.shop?.address && <span>{item.shop.address}</span>}
-                    {item.shop?.phone && <a href={`tel:${item.shop.phone}`}>Phone: {item.shop.phone}</a>}
-                  </div>
-                  <span className={`comparison-stock ${item.stockStatus?.toLowerCase().replaceAll(' ', '-') || ''}`}>{item.stockStatus || 'Availability unknown'}</span>
-                  <b>${item.price.toFixed(2)}</b>
+            {listings.length > 0 ? (
+              <>
+                <div className="comparison-price-summary">
+                  <article className="comparison-price-card comparison-lowest-card">
+                    <div className="comparison-card-top">
+                      <span className="comparison-card-icon">↓</span>
+                      <span className="comparison-card-label">Lowest price</span>
+                      <em>Best deal</em>
+                    </div>
+                    <strong>${lowestListing.price.toFixed(2)}</strong>
+                    <p>at {lowestListing.shop?.shopName || 'Vendor shop'}</p>
+                  </article>
+                  <article className="comparison-price-card comparison-highest-card">
+                    <div className="comparison-card-top">
+                      <span className="comparison-card-icon">↑</span>
+                      <span className="comparison-card-label">Highest price</span>
+                    </div>
+                    <strong>${highestListing.price.toFixed(2)}</strong>
+                    <p>at {highestListing.shop?.shopName || 'Vendor shop'}</p>
+                  </article>
                 </div>
-              ))}
-            </div>
-          </> : <div className="no-results">This product is not available right now.</div>}
-        </section>;
+                {savings > 0 && (
+                  <div className="comparison-savings-note">
+                    <span>✓</span>
+                    <p>Choose the lowest price and save <strong>${savings.toFixed(2)}</strong>.</p>
+                  </div>
+                )}
+                <div className="comparison-list-heading">
+                  <span>Shop</span>
+                  <span>Availability</span>
+                  <span>Price</span>
+                </div>
+                <div className="simple-comparison-list">
+                  {listings.map((item, index) => (
+                    <div className={index === 0 ? 'best-price-row' : ''} key={item._id}>
+                      <div className="comparison-shop-details">
+                        <strong>
+                          {item.shop?.shopName || 'Vendor shop'}
+                          {index === 0 && <small>Best price</small>}
+                        </strong>
+                        {item.shop?.address && <span>{item.shop.address}</span>}
+                        {item.shop?.phone && <a href={`tel:${item.shop.phone}`}>Phone: {item.shop.phone}</a>}
+                      </div>
+                      <span className={`comparison-stock ${item.stockStatus?.toLowerCase().replaceAll(' ', '-') || ''}`}>
+                        {item.stockStatus || 'Availability unknown'}
+                      </span>
+                      <b>${item.price.toFixed(2)}</b>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="no-results">This product is not available right now.</div>
+            )}
+          </section>
+        );
       })()}
 
+      {/* Saved Alerts Section */}
       {priceAlerts.length > 0 && (
         <section className="saved-alerts-section" aria-labelledby="saved-alerts-title">
           <div>
@@ -282,14 +547,6 @@ export default function LandingPage({ onViewChange }) {
           </div>
         </section>
       )}
-
     </main>
   );
 }
-
-
-
-
-
-
-

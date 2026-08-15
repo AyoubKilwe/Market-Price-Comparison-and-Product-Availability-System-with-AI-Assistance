@@ -71,13 +71,18 @@ export default function ProductCard({ product, onCompare, alertIds = [] }) {
             e.target.src = 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=150&auto=format&fit=crop&q=60&ixlib=rb-4.0.3';
           }}
         />
+        {product.category && (
+          <span className="card-category-pill">
+            {product.category}
+          </span>
+        )}
       </div>
 
       <h3 className="card-title" onClick={() => onCompare(product)} style={{ cursor: 'pointer' }}>
         {product.name}
       </h3>
       <div className="card-info">
-        {product.unit} â€¢ {product.shopName || 'Multiple Shops'}
+        {product.unit ? `${product.unit} • ` : ''}{product.shopName || 'Multiple Shops'}
       </div>
 
       <button
@@ -104,7 +109,7 @@ export default function ProductCard({ product, onCompare, alertIds = [] }) {
           type="button"
           className="card-add-btn"
           onClick={() => onCompare(product)}
-        title="Compare prices"
+          title="Compare prices"
         >
           {/* Custom comparison / plus icon */}
           <svg
@@ -124,6 +129,3 @@ export default function ProductCard({ product, onCompare, alertIds = [] }) {
     </div>
   );
 }
-
-
-
