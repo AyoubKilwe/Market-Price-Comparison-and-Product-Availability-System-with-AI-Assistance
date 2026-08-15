@@ -241,7 +241,19 @@ export default function LandingPage({ onViewChange }) {
             </div>
             {savings > 0 && <div className="comparison-savings-note"><span>✓</span><p>Choose the lowest price and save <strong>${savings.toFixed(2)}</strong>.</p></div>}
             <div className="comparison-list-heading"><span>Shop</span><span>Availability</span><span>Price</span></div>
-            <div className="simple-comparison-list">{listings.map((item, index) => <div className={index === 0 ? 'best-price-row' : ''} key={item._id}><strong>{item.shop?.shopName || 'Vendor shop'}{index === 0 && <small>Best price</small>}</strong><span className={`comparison-stock ${item.stockStatus?.toLowerCase().replaceAll(' ', '-') || ''}`}>{item.stockStatus}</span><b>${item.price.toFixed(2)}</b></div>)}</div>
+            <div className="simple-comparison-list">
+              {listings.map((item, index) => (
+                <div className={index === 0 ? 'best-price-row' : ''} key={item._id}>
+                  <div className="comparison-shop-details">
+                    <strong>{item.shop?.shopName || 'Vendor shop'}{index === 0 && <small>Best price</small>}</strong>
+                    {item.shop?.address && <span>{item.shop.address}</span>}
+                    {item.shop?.phone && <a href={`tel:${item.shop.phone}`}>Phone: {item.shop.phone}</a>}
+                  </div>
+                  <span className={`comparison-stock ${item.stockStatus?.toLowerCase().replaceAll(' ', '-') || ''}`}>{item.stockStatus || 'Availability unknown'}</span>
+                  <b>${item.price.toFixed(2)}</b>
+                </div>
+              ))}
+            </div>
           </> : <div className="no-results">This product is not available right now.</div>}
         </section>;
       })()}

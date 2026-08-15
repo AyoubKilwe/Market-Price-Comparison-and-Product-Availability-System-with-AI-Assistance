@@ -595,6 +595,49 @@
   .comparison-stock { grid-column: 1; grid-row: 2; }
   .comparison-panel .simple-comparison-list b { grid-column: 2; grid-row: 1 / span 2; align-self: center; }
 }
+
+/* Readable comparison layout: customer-facing information must never be tiny or hidden. */
+.comparison-panel {
+  width: min(calc(100% - 32px), 1080px);
+  padding: 30px;
+}
+.comparison-panel .simple-comparison-heading h2 { font-size: 30px; }
+.comparison-panel .simple-comparison-heading p { display: block; color: #475569; font-size: 16px; line-height: 1.55; }
+.comparison-panel .price-alert-button { min-height: 44px; padding: 10px 15px; font-size: 14px; }
+.comparison-panel .comparison-close-btn { width: 44px; height: 44px; font-size: 19px; }
+.comparison-panel .comparison-price-card { padding: 22px; }
+.comparison-panel .comparison-card-label { font-size: 14px; }
+.comparison-panel .comparison-card-top em { font-size: 11px; }
+.comparison-panel .comparison-price-card > strong { font-size: clamp(32px, 5vw, 44px); }
+.comparison-panel .comparison-price-card > p { overflow: visible; color: #334155; font-size: 17px; font-weight: 700; white-space: normal; }
+.comparison-panel .comparison-savings-note p { font-size: 16px; }
+.comparison-panel .comparison-list-heading { grid-template-columns: minmax(0,1fr) 170px 120px; gap: 18px; padding: 0 20px 10px; color: #475569; font-size: 13px; }
+.comparison-panel .simple-comparison-list { gap: 10px; }
+.comparison-panel .simple-comparison-list > div { grid-template-columns: minmax(0,1fr) 170px 120px; gap: 18px; padding: 20px; border-radius: 14px; }
+.comparison-panel .simple-comparison-list strong { font-size: 20px; line-height: 1.3; overflow-wrap: anywhere; }
+.comparison-panel .simple-comparison-list strong small { padding: 5px 8px; font-size: 11px; }
+.comparison-shop-details { display: flex; min-width: 0; flex-direction: column; align-items: flex-start; gap: 5px; }
+.comparison-shop-details > span { color: #475569; font-size: 15px; line-height: 1.4; }
+.comparison-shop-details > a { color: #0f766e; font-size: 15px; font-weight: 800; text-decoration: none; }
+.comparison-shop-details > a:hover { text-decoration: underline; }
+.comparison-panel .comparison-stock { padding: 8px 12px; font-size: 14px; }
+.comparison-panel .simple-comparison-list b { font-size: 22px; }
+
+@media (max-width: 600px) {
+  .comparison-panel { width: calc(100% - 24px); padding: 20px; }
+  .comparison-panel .simple-comparison-heading { flex-direction: column; gap: 14px; }
+  .comparison-panel .simple-comparison-heading h2 { font-size: 26px; }
+  .comparison-panel .comparison-actions { width: 100%; margin-left: 0; }
+  .comparison-panel .price-alert-button { display: inline-flex; flex: 1; justify-content: center; }
+  .comparison-panel .comparison-price-summary { grid-template-columns: 1fr; gap: 12px; }
+  .comparison-panel .comparison-card-icon,
+  .comparison-panel .comparison-card-top em { display: grid; }
+  .comparison-panel .comparison-price-card > strong { font-size: 34px; }
+  .comparison-panel .simple-comparison-list > div { grid-template-columns: minmax(0,1fr) auto; gap: 12px; padding: 18px; }
+  .comparison-panel .simple-comparison-list strong { align-items: flex-start; flex-direction: column; font-size: 19px; }
+  .comparison-panel .comparison-stock { grid-column: 1; grid-row: 2; font-size: 13px; }
+  .comparison-panel .simple-comparison-list b { grid-column: 2; grid-row: 1 / span 2; align-self: center; font-size: 21px; }
+}
 /* Compact comparison layout */
 .comparison-panel {
   width: min(calc(100% - 32px), 880px);
@@ -725,4 +768,40 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+}
+
+/* Final accessibility overrides must follow the legacy compact rules above. */
+html .comparison-panel { width: min(calc(100% - 32px), 1080px); padding: 30px; }
+html .comparison-panel .simple-comparison-heading h2 { font-size: 30px; }
+html .comparison-panel .simple-comparison-heading p { display: block; color: #475569; font-size: 16px; line-height: 1.55; }
+html .comparison-panel .price-alert-button { min-height: 44px; padding: 10px 15px; font-size: 14px; }
+html .comparison-panel .comparison-close-btn { width: 44px; height: 44px; font-size: 19px; }
+html .comparison-panel .comparison-price-card { padding: 22px; }
+html .comparison-panel .comparison-card-label { font-size: 14px; }
+html .comparison-panel .comparison-card-top em { font-size: 11px; }
+html .comparison-panel .comparison-price-card > strong { font-size: clamp(32px, 5vw, 44px); }
+html .comparison-panel .comparison-price-card > p { overflow: visible; color: #334155; font-size: 17px; font-weight: 700; text-overflow: clip; white-space: normal; }
+html .comparison-panel .comparison-savings-note p { font-size: 16px; }
+html .comparison-panel .comparison-list-heading { grid-template-columns: minmax(0,1fr) 170px 120px; gap: 18px; padding: 0 20px 10px; color: #475569; font-size: 13px; }
+html .comparison-panel .simple-comparison-list { gap: 10px; }
+html .comparison-panel .simple-comparison-list > div { grid-template-columns: minmax(0,1fr) 170px 120px; gap: 18px; padding: 20px; border-radius: 14px; }
+html .comparison-panel .simple-comparison-list strong { font-size: 20px; line-height: 1.3; overflow-wrap: anywhere; }
+html .comparison-panel .simple-comparison-list strong small { padding: 5px 8px; font-size: 11px; }
+html .comparison-panel .comparison-stock { padding: 8px 12px; font-size: 14px; }
+html .comparison-panel .simple-comparison-list b { font-size: 22px; }
+
+@media (max-width: 600px) {
+  html .comparison-panel { width: calc(100% - 24px); padding: 20px; }
+  html .comparison-panel .simple-comparison-heading { flex-direction: column; gap: 14px; }
+  html .comparison-panel .simple-comparison-heading h2 { font-size: 26px; }
+  html .comparison-panel .comparison-actions { width: 100%; margin-left: 0; }
+  html .comparison-panel .price-alert-button { display: inline-flex; flex: 1; justify-content: center; }
+  html .comparison-panel .comparison-price-summary { grid-template-columns: 1fr; gap: 12px; }
+  html .comparison-panel .comparison-card-icon,
+  html .comparison-panel .comparison-card-top em { display: grid; }
+  html .comparison-panel .comparison-price-card > strong { font-size: 34px; }
+  html .comparison-panel .simple-comparison-list > div { grid-template-columns: minmax(0,1fr) auto; gap: 12px; padding: 18px; }
+  html .comparison-panel .simple-comparison-list strong { align-items: flex-start; flex-direction: column; font-size: 19px; }
+  html .comparison-panel .comparison-stock { grid-column: 1; grid-row: 2; font-size: 13px; }
+  html .comparison-panel .simple-comparison-list b { grid-column: 2; grid-row: 1 / span 2; align-self: center; font-size: 21px; }
 }
