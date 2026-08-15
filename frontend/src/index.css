@@ -2556,30 +2556,41 @@ img {
 }
 
 .admin-product-action-btn {
-  padding: 5px 11px;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid transparent;
   cursor: pointer;
-  transition: all 0.18s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
 }
 
 .admin-product-action-btn.edit {
   background: #eff6ff;
   color: #2563eb;
+  border-color: #bfdbfe;
 }
 .admin-product-action-btn.edit:hover {
   background: #2563eb;
   color: #fff;
+  border-color: #2563eb;
+  transform: scale(1.08);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
 }
 .admin-product-action-btn.delete {
   background: #fef2f2;
   color: #dc2626;
+  border-color: #fecaca;
 }
 .admin-product-action-btn.delete:hover {
   background: #dc2626;
   color: #fff;
+  border-color: #dc2626;
+  transform: scale(1.08);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
 }
 
 /* Catalog / Vendor status badges */
