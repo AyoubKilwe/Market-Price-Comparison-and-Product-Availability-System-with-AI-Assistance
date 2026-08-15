@@ -399,7 +399,7 @@
 .simple-hero-card strong { font-size: 21px; }
 .simple-hero-card span { margin-top: 6px; color: #64748b; font-size: 12px; }
 .simple-products-section, .simple-comparison { max-width: 1180px; margin: auto; padding: 58px 28px; }
-.simple-products-section { border-top: 1px solid #f1f5f9; }
+.simple-products-section { border-top: 1px solid #f1f5f9; background: #fff; }
 .simple-section-heading { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 25px; }
 .simple-section-heading h2, .simple-comparison-heading h2 { margin: 5px 0 0; color: #0f172a; font-size: 27px; }
 .simple-product-search { display: flex; align-items: center; width: min(100%,330px); padding: 0 13px; border: 1px solid #e2e8f0; border-radius: 10px; background: #f8fafc; }
@@ -436,8 +436,6 @@
 .simple-landing-hero { background: radial-gradient(circle at 85% 20%,rgba(45,212,191,.15),transparent 28%),linear-gradient(180deg,#ffffff,#f8fffe); }
 .simple-primary-action { background: linear-gradient(135deg,#0d9488,#0891b2); }
 .simple-primary-action:hover { transform: translateY(-2px); box-shadow: 0 12px 26px rgba(13,148,136,.3); }
-.simple-products-section { background: #fff; }
-.simple-product-search:focus-within { border-color: #2dd4bf; box-shadow: 0 0 0 4px rgba(45,212,191,.12); }
 @media (max-width: 600px) { .landing-shops-section { padding: 42px 14px 50px; } .landing-view-all { width: 100%; } }
 
 /* Premium landing hero refresh */
@@ -820,6 +818,42 @@ html .comparison-panel .simple-comparison-list b { font-size: 22px; }
   margin-bottom: 4px;
 }
 
+/* Products and Prices Section Full-bleed Contrast Backdrop */
+.simple-products-section {
+  position: relative;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 64px 28px 76px;
+}
+
+.simple-products-section::before {
+  position: absolute;
+  z-index: 0;
+  inset: 0 calc(50% - 50vw);
+  content: '';
+  background: radial-gradient(circle at 85% 15%, rgba(13, 148, 136, 0.07) 0%, transparent 42%),
+              radial-gradient(circle at 12% 88%, rgba(14, 165, 233, 0.07) 0%, transparent 42%),
+              linear-gradient(180deg, #f8fafc 0%, #f1f5f9 50%, #f8fafc 100%);
+  border-top: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.simple-products-section > * {
+  position: relative;
+  z-index: 1;
+}
+
+.simple-product-search {
+  display: flex;
+  align-items: center;
+  width: min(100%, 340px);
+  padding: 0 14px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+}
+
 .clear-search-btn {
   background: none;
   border: none;
@@ -843,14 +877,14 @@ html .comparison-panel .simple-comparison-list b { font-size: 22px; }
   opacity: 0.6;
 }
 
-/* Category Filter Wrapper */
+/* Category Filter Wrapper - Elevated Card */
 .category-filter-wrapper {
   margin: 18px 0 28px;
-  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  background: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 16px;
+  border-radius: 18px;
   padding: 16px 20px;
-  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.03);
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
 }
 
 .category-filter-header {
