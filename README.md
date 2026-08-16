@@ -1,58 +1,64 @@
-# Market Price Comparison and Product Availability System with AI Assistance
+# Market Price Comparison & Product Availability System (AI-assisted)
 
 **Live Demo:** https://frontend-production-c87c.up.railway.app/
 
-## Dulmar kooban (Overview)
-Mashruucan waa nidaam isbarbardhig qiimo iyo helitaan badeecooyin oo wata caawimaad AI. Waxay u oggolaanaysaa isticmaalayaasha iyo ganacsatada inay:
+## Overview
+This project is a full-stack platform that helps users compare product prices across local shops and check product availability in real-time. It also provides AI-assisted recommendations to help users make better purchasing decisions.
 
-- Ka helaan qiimayaal isbarbar socda suuqyada kala duwan
-- Ka ogaadaan helitaanka alaabta (availability)
-- Helaan talooyin iyo jawaabo AI-led ah si loo sahlanaado go'aan qaadashada
+Key capabilities:
+- Cross-shop price comparison
+- Real-time product availability (stock) status
+- Role-based dashboards for customers and vendors
+- AI assistant for suggestions and Q&A
 
-## Muhiimadda Mashruuca
-Mashruucan wuxuu fududeeyaa in la ogaado meesha ugu fiican ee badeeco laga iibsado, isla markaana bixiya xog-waqtiga-dhabta ah oo ku saabsan helitaanka alaabta iyo isbeddelka qiimaha.
+## Why this project
+It simplifies finding the best place to buy a product by aggregating listings from multiple vendors, tracking price changes, and surfacing availability information so users can save time and money.
 
-## Qaybaha Mashruuca
-- `backend/`: API server (Node.js + Express)
-- `frontend/`: React app (Vite) + design assets
+## Repository structure
+- `backend/` — Node.js + Express API server
+- `frontend/` — React (Vite) single-page application and design assets
 
-## Astaamaha (Features)
-- Isbarbardhig qiimaha badeecadaha
-- Raadinta helitaanka (availability) dukaamo kala duwan
-- Dashboor kala duwan: macmiil, iibiyaha
-- AI assistant (controller: `controllers/aiController.js`) oo bixin karta talooyin iyo su'aalo jawaabo
+## Features
+- Product price comparison across shops
+- Product availability checks per shop
+- Customer and vendor dashboards
+- AI assistant (see `backend/controllers/aiController.js`) for conversational help and recommendations
 
-## Teknolojiyada la Isticmaalay
+## Tech Stack
 - Node.js, Express
-- MongoDB (config: `backend/config/db.js`)
+- MongoDB (see `backend/config/db.js`)
 - React + Vite
-- Gemini service integration (see `backend/services/geminiService.js`)
+- Gemini service integration (`backend/services/geminiService.js`)
 
-## Sida Loo Socodsiiyo (Local Setup)
-1. Clone repository-ga:
+## Local setup
+1. Clone the repository:
 
    git clone <your-repo-url>
 
-2. Backend:
+2. Start the backend:
 
-   cd backend
-   npm install
-   npm run start
+```bash
+cd backend
+npm install
+npm run start
+```
 
-3. Frontend:
+3. Start the frontend:
 
-   cd frontend
-   npm install
-   npm run dev
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-4. DB: Update `backend/config/db.js` with connection string.
+4. Configure the database connection by updating `backend/config/db.js` with your MongoDB URI.
 
-## Sidee u Shaqeyso (How it works)
-- Frontend wuxuu wacaa API-ga backend-ka si uu u helo liiska badeecooyinka iyo helitaanka.
-- Backend-ku wuxuu ku xiran yahay ilo xogeedyo kala duwan (listings, shops) iyo adeeg AI oo bixiya talooyinka.
+## How it works
+- The frontend calls the backend API to fetch product listings, prices, and availability.
+- The backend aggregates data from listings and shops, performs business logic, and uses an AI service for assistant responses.
 
-## Screenshots (Design)
-Hoos ka heli sawirro ka turjumaya qaybaha frontend-ka (Design/Screens):
+## Screenshots
+Design assets and screenshots are available in `frontend/Design/Screens` and included below:
 
 ![Landing Page](frontend/Design/Screens/landing-page.png)
 ![Product Catalog](frontend/Design/Screens/product-catalog.jpg)
@@ -60,21 +66,22 @@ Hoos ka heli sawirro ka turjumaya qaybaha frontend-ka (Design/Screens):
 ![Customer Dashboard](frontend/Design/Screens/customer-dashboard.png)
 ![Vendor Dashboard](frontend/Design/Screens/vendor-dashboard.png)
 
-## Faylasha Muhiimka ah
-- `backend/server.js` — Entry point backend
-- `backend/controllers/` — API controllers
-- `frontend/src/` — React source
+## Important files
+- `backend/server.js` — API entry point
+- `backend/controllers/` — Request handlers and business logic
+- `frontend/src/` — React application source
 
-## Live Deployment
-Mashruucu waa online: https://frontend-production-c87c.up.railway.app/
+## Deployment
+The app is deployed and accessible at:
+
+https://frontend-production-c87c.up.railway.app/
 
 ## Contributing
-- Fadlan samee fork, samee branch cusub, kadib PR.
+Please fork the repository, create a feature branch, and open a pull request with a clear description of your changes.
 
 ## License
-- Eeg `LICENSE` haddii uu jiro ama la xiriir milkiilaha mashruuca.
+If a `LICENSE` file exists in this repository, refer to it. Otherwise, contact the project owner for licensing details.
 
 ---
-_Waxaa diyaariyey: README auto-generated and polished._
-# Market-Price-Comparison-and-Product-Availability-System-with-AI-Assistance
-MERN full-stack market price comparison and product availability platform for Hargeisa, featuring nearby shops, price alerts, market trends, vendor management, and AI assistance. Developed collaboratively
+_Prepared and polished by the project maintainer._
+
