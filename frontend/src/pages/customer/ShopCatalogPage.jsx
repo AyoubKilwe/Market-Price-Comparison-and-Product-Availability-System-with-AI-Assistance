@@ -1,7 +1,15 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import customerApi from './customerApi';
 import { toggleFavourite, useFavouriteIds } from '../../utils/favourites';
 
+const getVisitorId = () => {
+  let id = localStorage.getItem('marketeye_visitor_id');
+  if (!id) {
+    id = globalThis.crypto?.randomUUID?.() || `visitor-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    localStorage.setItem('marketeye_visitor_id', id);
+  }
+  return id;
+};
 const toRadians = (value) => (value * Math.PI) / 180;
 const distanceKm = (from, shop) => {
   const dLat = toRadians(shop.latitude - from.latitude);
@@ -63,6 +71,7 @@ export default function ShopCatalogPage() {
           setIsLoadingShop(true);
           customerApi.getShopDetails(chosenShop._id)
             .then((details) => {
+              customerApi.recordShopVisit(chosenShop._id, getVisitorId()).catch(() => {});
               setSelectedShop(details.shop);
               setShopListings(details.listings || []);
             })
@@ -90,12 +99,17 @@ export default function ShopCatalogPage() {
     setIsLoadingShop(true);
     try {
       const data = await customerApi.getShopDetails(shop._id);
+      customerApi.recordShopVisit(shop._id, getVisitorId()).catch(() => {});
       setSelectedShop({ ...data.shop, distance: shop.distance });
       setShopListings(data.listings || []);
       window.setTimeout(() => document.getElementById('selected-shop')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
     } finally {
       setIsLoadingShop(false);
     }
+  };
+
+  const recordProductView = (item) => {
+    customerApi.recordListingView(item._id, getVisitorId()).catch(() => {});
   };
 
   return (
@@ -136,10 +150,10 @@ export default function ShopCatalogPage() {
           {isLoadingShop ? <div className="customer-shop-empty">Loading products...</div> : shopListings.length === 0 ? <div className="customer-shop-empty">No products available.</div> : (
             <div className="customer-product-grid">
               {shopListings.map((item) => (
-                <article className="customer-product-card" key={item._id}>
+                <article className="customer-product-card" key={item._id} onClick={() => recordProductView(item)}>
                   <div className="customer-product-image">{item.product?.image ? <img src={item.product.image} alt="" /> : <span>{item.product?.name?.[0] || 'P'}</span>}</div>
                   <div><span className="customer-product-category">{item.product?.category}</span><h3>{item.product?.name}</h3><p>{item.unit || '1 item'}</p></div>
-                  <div className="customer-product-price"><strong>${item.price.toFixed(2)}</strong><span className={`listing-status ${item.stockStatus.toLowerCase().replaceAll(' ', '-')}`}>{item.stockStatus}</span></div>
+                  <div className="customer-product-price"><strong>${item.price.toFixed(2)}</strong><span className={`listing-status ${item.stockStatus.toLowerCase().replaceAll(' ', '-')}`}>{item.stockStatus}</span><button type="button" className="product-view-action">View product</button></div>
                 </article>
               ))}
             </div>
@@ -149,10 +163,3 @@ export default function ShopCatalogPage() {
     </main>
   );
 }
-
-
-
-
-
-
-

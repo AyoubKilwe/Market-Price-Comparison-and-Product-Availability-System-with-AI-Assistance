@@ -3,6 +3,7 @@ import vendorApi from './vendorApi';
 
 const navItems = [
   { label: 'Shop Profile', icon: '🏪' },
+  { label: 'Market Insights', icon: 'MI' },
   { label: 'Manage Listings', icon: '🧾', active: true },
   { label: 'Settings', icon: '⚙' },
 ];
@@ -152,6 +153,7 @@ export default function VendorProductListingPage({ user, onViewChange, onSignOut
 
   const handleNavigate = (label) => {
     if (label === 'Shop Profile') onViewChange?.('vendor-profile');
+    if (label === 'Market Insights') onViewChange?.('vendor-insights');
     if (label === 'Manage Listings') onViewChange?.('vendor-listing');
     if (label === 'Settings') onViewChange?.('vendor-settings');
   };

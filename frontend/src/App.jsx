@@ -14,6 +14,7 @@ import PriceAlertsPage from './pages/customer/PriceAlertsPage';
 import VendorShopProfilePage from './pages/vendor/VendorShopProfilePage';
 import VendorProductListingPage from './pages/vendor/VendorProductListingPage';
 import VendorPasswordPage from './pages/vendor/VendorPasswordPage';
+import VendorInsightsPage from './pages/vendor/VendorInsightsPage';
 
 // Admin Pages
 import AdminApprovalPage from './pages/admin/AdminApprovalPage';
@@ -107,6 +108,10 @@ export default function App() {
 
         {view === 'vendor-listing' && (
           <VendorProductListingPage user={user} onViewChange={setView} onSignOut={handleSignOut} />
+        )}
+
+        {view === 'vendor-insights' && (
+          <VendorInsightsPage user={user} onViewChange={setView} onSignOut={handleSignOut} />
         )}
 
         {view === 'vendor-settings' && (

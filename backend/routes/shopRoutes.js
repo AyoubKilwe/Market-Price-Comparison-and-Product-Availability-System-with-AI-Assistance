@@ -5,8 +5,10 @@ const {
   getAllShops,
   getApprovedShops,
   getMyShop,
+  getMyShopInsights,
   getReportingStats,
   getShop,
+  recordShopVisit,
   updateMyShop,
   updateShopStatus,
 } = require('../controllers/shopController');
@@ -34,7 +36,9 @@ const shopRules = [
 router.post('/', protect, authorize('Vendor'), shopRules, validate, createShop);
 router.get('/', getApprovedShops);
 router.get('/my-shop', protect, authorize('Vendor'), getMyShop);
+router.get('/my-shop/insights', protect, authorize('Vendor'), getMyShopInsights);
 router.put('/my-shop', protect, authorize('Vendor'), shopRules, validate, updateMyShop);
+router.post('/:id/visit', param('id').isMongoId().withMessage('A valid shop ID is required'), body('visitorId').optional().isString().isLength({ max: 100 }), validate, recordShopVisit);
 router.patch(
   '/:id/status',
   protect,

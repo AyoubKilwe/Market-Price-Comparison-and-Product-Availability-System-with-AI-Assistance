@@ -1,4 +1,4 @@
-﻿import { api } from '../../services/api';
+import { api } from '../../services/api';
 
 export const customerApi = {
   login: (credentials) => api.post('/api/auth/login', credentials),
@@ -11,8 +11,8 @@ export const customerApi = {
   getFeaturedListings: () => api.get('/api/listings/featured'),
   getApprovedShops: () => api.get('/api/shops'),
   getShopDetails: (shopId) => api.get(`/api/shops/${shopId}`),
+  recordShopVisit: (shopId, visitorId) => api.post(`/api/shops/${shopId}/visit`, { visitorId }),
+  recordListingView: (listingId, visitorId) => api.post(`/api/listings/${listingId}/view`, { visitorId }),
 };
 
 export default customerApi;
-
-

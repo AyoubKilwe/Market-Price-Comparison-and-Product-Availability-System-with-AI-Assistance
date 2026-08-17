@@ -4,6 +4,7 @@ import LocationMap from '../../components/LocationMap';
 
 const navItems = [
   { label: 'Shop Profile', icon: 'ðŸª', active: true },
+  { label: 'Market Insights', icon: 'MI' },
   { label: 'Manage Listings', icon: 'ðŸ§¾' },
   { label: 'Settings', icon: 'âš™' },
 ];
@@ -127,6 +128,7 @@ export default function VendorShopProfilePage({ user, onViewChange, onSignOut })
   };
 
   const handleNavigate = (label) => {
+    if (label === 'Market Insights') onViewChange?.('vendor-insights');
     if (label === 'Manage Listings') onViewChange?.('vendor-listing');
     if (label === 'Shop Profile') onViewChange?.('vendor-profile');
     if (label === 'Settings') onViewChange?.('vendor-settings');

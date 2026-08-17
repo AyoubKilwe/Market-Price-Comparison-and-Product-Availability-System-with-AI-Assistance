@@ -132,6 +132,13 @@ const compareProduct = asyncHandler(async (req, res) => {
   return res.status(200).json(comparison);
 });
 
+
+const recordListingView = asyncHandler(async (req, res) => {
+  const listing = await Listing.findOne({ _id: req.params.id, isActive: true }).populate('shop', 'status');
+  if (!listing || listing.shop?.status !== 'Approved') return res.status(404).json({ message: 'Active listing not found' });
+  await CustomerActivity.create({ type: 'view', product: listing.product, shop: listing.shop._id, listing: listing._id, visitorId: req.body.visitorId || '' });
+  return res.status(201).json({ recorded: true });
+});
 // Public landing-page deals: one cheapest active listing per active product,
 // restricted to shops that have been approved by an administrator.
 const getFeaturedListings = asyncHandler(async (req, res) => {
@@ -201,5 +208,6 @@ module.exports = {
   getFeaturedListings,
   getMyListings,
   getShopListings,
+  recordListingView,
   updateListing,
 };
