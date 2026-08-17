@@ -1,12 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
+import VendorSidebar from './VendorSidebar';
 import vendorApi from './vendorApi';
 
-const navItems = [
-  { label: 'Shop Profile', icon: '🏪' },
-  { label: 'Market Insights', icon: 'MI' },
-  { label: 'Manage Listings', icon: '🧾', active: true },
-  { label: 'Settings', icon: '⚙' },
-];
 
 const statusClassName = {
   'In Stock': 'listing-status in-stock',
@@ -151,40 +146,10 @@ export default function VendorProductListingPage({ user, onViewChange, onSignOut
     }
   };
 
-  const handleNavigate = (label) => {
-    if (label === 'Shop Profile') onViewChange?.('vendor-profile');
-    if (label === 'Market Insights') onViewChange?.('vendor-insights');
-    if (label === 'Manage Listings') onViewChange?.('vendor-listing');
-    if (label === 'Settings') onViewChange?.('vendor-settings');
-  };
 
   return (
     <div className="admin-product-shell vendor-portal">
-      <aside className="admin-product-sidebar">
-        <div className="admin-product-brand">MarketEye Vendor</div>
-
-        <div className="admin-product-user-card">
-          <div className="admin-product-avatar">{user?.name ? user.name[0].toUpperCase() : 'V'}</div>
-          <div>
-            <div className="admin-product-user-name">{user?.name || 'Vendor'}</div>
-            <div className="admin-product-user-role">{shop ? shop.shopName : 'No Shop Yet'}</div>
-          </div>
-        </div>
-
-        <nav className="admin-product-nav">
-          {navItems.map((item) => (
-            <button
-              key={item.label}
-              type="button"
-              className={`admin-product-nav-item ${item.active ? 'active' : ''}`}
-              onClick={() => handleNavigate(item.label)}
-            >
-              <span className="admin-product-nav-icon">{item.icon}</span>
-              <span>{item.label}</span>
-            </button>
-          ))}
-        </nav>
-      </aside>
+      <VendorSidebar activeView="vendor-listing" user={user} shopName={shop?.shopName} onViewChange={onViewChange} />
 
       <section className="admin-product-content vendor-portal-content">
         <div className="admin-product-header-row">
@@ -194,7 +159,7 @@ export default function VendorProductListingPage({ user, onViewChange, onSignOut
           </div>
 
           <div className="admin-product-searchbox">
-            <span>⌕</span>
+            <span>ÃƒÂ¢Ã…â€™Ã¢â‚¬Â¢</span>
             <input
               type="text"
               value={searchTerm}
@@ -253,7 +218,7 @@ export default function VendorProductListingPage({ user, onViewChange, onSignOut
             </div>
 
             <div className="vendor-catalog-search">
-              <span>⌕</span>
+              <span>ÃƒÂ¢Ã…â€™Ã¢â‚¬Â¢</span>
               <input
                 type="text"
                 placeholder="Search products or categories..."
@@ -275,7 +240,7 @@ export default function VendorProductListingPage({ user, onViewChange, onSignOut
                   >
                     <div className="vendor-catalog-item-name">{prod.name}</div>
                     <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                      Category: {prod.category} • Unit: {prod.unit}
+                      Category: {prod.category} ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ Unit: {prod.unit}
                     </div>
                     <span className={`vendor-catalog-action ${listingsByProduct.has(prod._id) ? 'listed' : ''}`}>
                       {listingsByProduct.has(prod._id) ? 'Edit' : 'Add'}

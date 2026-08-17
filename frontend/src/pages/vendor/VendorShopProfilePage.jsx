@@ -1,13 +1,8 @@
 import { useEffect, useState } from 'react';
+import VendorSidebar from './VendorSidebar';
 import vendorApi from './vendorApi';
 import LocationMap from '../../components/LocationMap';
 
-const navItems = [
-  { label: 'Shop Profile', icon: 'ðŸª', active: true },
-  { label: 'Market Insights', icon: 'MI' },
-  { label: 'Manage Listings', icon: 'ðŸ§¾' },
-  { label: 'Settings', icon: 'âš™' },
-];
 
 export default function VendorShopProfilePage({ user, onViewChange, onSignOut }) {
   const [formData, setFormData] = useState({
@@ -127,39 +122,10 @@ export default function VendorShopProfilePage({ user, onViewChange, onSignOut })
     }
   };
 
-  const handleNavigate = (label) => {
-    if (label === 'Market Insights') onViewChange?.('vendor-insights');
-    if (label === 'Manage Listings') onViewChange?.('vendor-listing');
-    if (label === 'Shop Profile') onViewChange?.('vendor-profile');
-    if (label === 'Settings') onViewChange?.('vendor-settings');
-  };
 
   return (
     <div className="admin-reporting-shell vendor-portal">
-      <aside className="admin-reporting-sidebar">
-        <div className="admin-reporting-brand">MarketEye Vendor</div>
-
-        <div className="admin-reporting-user-card">
-          <div className="admin-reporting-avatar">{user?.name ? user.name[0].toUpperCase() : 'V'}</div>
-          <div>
-            <div className="admin-reporting-user-name">{user?.name || 'Vendor User'}</div>
-          </div>
-        </div>
-
-        <nav className="admin-reporting-nav">
-          {navItems.map((item) => (
-            <button
-              key={item.label}
-              type="button"
-              className={`admin-reporting-nav-item ${item.active ? 'active' : ''}`}
-              onClick={() => handleNavigate(item.label)}
-            >
-              <span className="admin-reporting-nav-icon">{item.icon}</span>
-              <span>{item.label}</span>
-            </button>
-          ))}
-        </nav>
-      </aside>
+      <VendorSidebar activeView="vendor-profile" user={user} onViewChange={onViewChange} />
 
       <section className="admin-reporting-content vendor-portal-content">
         <div className="admin-reporting-header-row">
@@ -248,7 +214,7 @@ export default function VendorShopProfilePage({ user, onViewChange, onSignOut })
                   </label>
 
                   <label className="admin-product-field vendor-profile-wide-field">
-                    <span>Shop banner <small>Optional · JPG, PNG or WebP · max 2 MB</small></span>
+                    <span>Shop banner <small>Optional Ãƒâ€šÃ‚Â· JPG, PNG or WebP Ãƒâ€šÃ‚Â· max 2 MB</small></span>
                     <input
                       type="file"
                       accept="image/jpeg,image/png,image/webp"

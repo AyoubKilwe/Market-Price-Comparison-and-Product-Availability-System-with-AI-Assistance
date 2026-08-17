@@ -1,24 +1,13 @@
 import { useState } from 'react';
+import VendorSidebar from './VendorSidebar';
 import vendorApi from './vendorApi';
 
-const navItems = [
-  { label: 'Shop Profile', icon: '🏪' },
-  { label: 'Market Insights', icon: 'MI' },
-  { label: 'Manage Listings', icon: '🧾' },
-  { label: 'Settings', icon: '⚙' },
-];
 
 export default function VendorPasswordPage({ user, onViewChange, onSignOut }) {
   const [form, setForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
   const [notice, setNotice] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
-  const handleNavigate = (label) => {
-    if (label === 'Shop Profile') onViewChange?.('vendor-profile');
-    if (label === 'Market Insights') onViewChange?.('vendor-insights');
-    if (label === 'Manage Listings') onViewChange?.('vendor-listing');
-    if (label === 'Settings') onViewChange?.('vendor-settings');
-  };
 
   const updateField = (field) => (event) => {
     setForm((current) => ({ ...current, [field]: event.target.value }));
@@ -56,28 +45,7 @@ export default function VendorPasswordPage({ user, onViewChange, onSignOut }) {
 
   return (
     <div className="admin-reporting-shell vendor-portal">
-      <aside className="admin-reporting-sidebar">
-        <div className="admin-reporting-brand">MarketEye Vendor</div>
-        <div className="admin-reporting-user-card">
-          <div className="admin-reporting-avatar">{user?.name?.[0]?.toUpperCase() || 'V'}</div>
-          <div>
-            <div className="admin-reporting-user-name">{user?.name || 'Vendor'}</div>
-          </div>
-        </div>
-        <nav className="admin-reporting-nav">
-          {navItems.map((item) => (
-            <button
-              key={item.label}
-              type="button"
-              className={`admin-reporting-nav-item ${item.label === 'Settings' ? 'active' : ''}`}
-              onClick={() => handleNavigate(item.label)}
-            >
-              <span className="admin-reporting-nav-icon">{item.icon}</span>
-              <span>{item.label}</span>
-            </button>
-          ))}
-        </nav>
-      </aside>
+      <VendorSidebar activeView="vendor-settings" user={user} onViewChange={onViewChange} />
 
       <section className="admin-reporting-content vendor-portal-content">
         <div className="admin-reporting-header-row">

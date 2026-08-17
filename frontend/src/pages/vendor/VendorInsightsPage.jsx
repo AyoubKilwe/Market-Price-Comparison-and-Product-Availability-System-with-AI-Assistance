@@ -1,12 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
+import VendorSidebar from './VendorSidebar';
 import vendorApi from './vendorApi';
 
-const navItems = [
-  { label: 'Shop Profile', icon: 'SP', view: 'vendor-profile' },
-  { label: 'Manage Listings', icon: 'ML', view: 'vendor-listing' },
-  { label: 'Market Insights', icon: 'MI', view: 'vendor-insights' },
-  { label: 'Settings', icon: 'ST', view: 'vendor-settings' },
-];
 
 const shortDate = (date) => new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric' }).format(new Date(`${date}T00:00:00Z`));
 
@@ -42,16 +37,7 @@ export default function VendorInsightsPage({ user, onViewChange, onSignOut }) {
 
   return (
     <div className="admin-reporting-shell vendor-portal vendor-insights-shell">
-      <aside className="admin-reporting-sidebar">
-        <div className="admin-reporting-brand">MarketEye Vendor</div>
-        <div className="admin-reporting-user-card">
-          <div className="admin-reporting-avatar">{user?.name?.[0]?.toUpperCase() || 'V'}</div>
-          <div><div className="admin-reporting-user-name">{user?.name || 'Vendor'}</div><div className="admin-reporting-user-role">{data?.shop?.shopName || 'Your shop'}</div></div>
-        </div>
-        <nav className="admin-reporting-nav">
-          {navItems.map((item) => <button key={item.label} type="button" className={`admin-reporting-nav-item ${item.view === 'vendor-insights' ? 'active' : ''}`} onClick={() => onViewChange?.(item.view)}><span className="admin-reporting-nav-icon">{item.icon}</span><span>{item.label}</span></button>)}
-        </nav>
-      </aside>
+      <VendorSidebar activeView="vendor-insights" user={user} shopName={data?.shop?.shopName} onViewChange={onViewChange} />
 
       <section className="admin-reporting-content vendor-portal-content">
         <div className="admin-reporting-header-row insights-header">
@@ -91,3 +77,4 @@ export default function VendorInsightsPage({ user, onViewChange, onSignOut }) {
     </div>
   );
 }
+
