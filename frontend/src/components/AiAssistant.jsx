@@ -1,8 +1,17 @@
 import { useState, useRef, useEffect } from 'react';
 import customerApi from '../pages/customer/customerApi';
 
+const AI_NOTICE_ACCEPTED_KEY = 'marketeye_ai_product_notice_accepted';
+
 export default function AiAssistant() {
   const [isOpen, setIsOpen] = useState(false);
+  const [hasAcceptedNotice, setHasAcceptedNotice] = useState(() => {
+    try {
+      return localStorage.getItem(AI_NOTICE_ACCEPTED_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
   const [messages, setMessages] = useState([
     {
       id: 'welcome',
@@ -13,6 +22,15 @@ export default function AiAssistant() {
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
+
+  const acceptProductNotice = () => {
+    try {
+      localStorage.setItem(AI_NOTICE_ACCEPTED_KEY, 'true');
+    } catch {
+      // The notice still closes when browser storage is unavailable.
+    }
+    setHasAcceptedNotice(true);
+  };
 
   // Scroll to bottom of chat
   useEffect(() => {
@@ -227,6 +245,22 @@ export default function AiAssistant() {
               </button>
             </form>
           </div>
+
+          {!hasAcceptedNotice && (
+            <div className="ai-notice-overlay">
+              <section className="ai-notice-dialog" role="dialog" aria-modal="true" aria-labelledby="ai-notice-title" aria-describedby="ai-notice-description">
+                <div className="ai-notice-icon" aria-hidden="true">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M12 16v-4M12 8h.01" />
+                  </svg>
+                </div>
+                <h2 id="ai-notice-title">Before you use MarketEye AI</h2>
+                <p id="ai-notice-description">This assistant is trained only to help you find products, compare their prices, and check availability in MarketEye shops. Please do not ask it about unrelated topics.</p>
+                <button type="button" className="ai-notice-accept-btn" onClick={acceptProductNotice} autoFocus>Accept</button>
+              </section>
+            </div>
+          )}
         </div>
       )}
     </>
