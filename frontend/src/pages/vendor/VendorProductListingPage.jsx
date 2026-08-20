@@ -159,7 +159,7 @@ export default function VendorProductListingPage({ user, onViewChange, onSignOut
           </div>
 
           <div className="admin-product-searchbox">
-            <span>ÃƒÂ¢Ã…â€™Ã¢â‚¬Â¢</span>
+            <span>🔍</span>
             <input
               type="text"
               value={searchTerm}

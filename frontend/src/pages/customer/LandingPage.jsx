@@ -71,7 +71,7 @@ export default function LandingPage({ onViewChange }) {
 
     navigator.geolocation?.getCurrentPosition(
       ({ coords }) => setLocation({ latitude: coords.latitude, longitude: coords.longitude }),
-      () => {},
+      () => { },
       { enableHighAccuracy: true, timeout: 12000 }
     );
   }, []);
