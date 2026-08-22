@@ -1,9 +1,18 @@
-import { useState } from 'react';
+import { toggleFavourite, useFavouriteIds } from '../utils/favourites';
+import { announcePriceAlertChange, priceAlertApi } from '../utils/priceAlerts';
 
-export default function ProductCard({ product, onCompare }) {
-  const [isFavorite, setIsFavorite] = useState(false);
+export default function ProductCard({ product, onCompare, alertIds = [] }) {
+  const favouriteIds = useFavouriteIds('product');
+  const isFavorite = favouriteIds.includes(product.id);
+  const isAlertOn = alertIds.includes(product.id);
 
-  // Helper to get matching badge classes
+  const togglePriceAlert = async (event) => {
+    event.stopPropagation();
+    if (isAlertOn) await priceAlertApi.removeAlert(product.id);
+    else await priceAlertApi.addAlert(product.id);
+    announcePriceAlertChange();
+  };
+
   const getBadgeClass = (badgeType) => {
     switch (badgeType) {
       case '-15% Drop':
@@ -31,9 +40,11 @@ export default function ProductCard({ product, onCompare }) {
         className="card-favorite-btn"
         onClick={(e) => {
           e.stopPropagation();
-          setIsFavorite(!isFavorite);
+          toggleFavourite('product', product.id);
         }}
         style={{ color: isFavorite ? 'var(--color-error)' : 'inherit' }}
+        aria-pressed={isFavorite}
+        aria-label={isFavorite ? `Remove ${product.name} from favourites` : `Add ${product.name} to favourites`}
       >
         <svg
           width="16"
@@ -55,18 +66,33 @@ export default function ProductCard({ product, onCompare }) {
           alt={product.name}
           className="card-image"
           onError={(e) => {
-            // fallback if image fails to load
             e.target.src = 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=150&auto=format&fit=crop&q=60&ixlib=rb-4.0.3';
           }}
         />
+        {product.category && (
+          <span className="card-category-pill">
+            {product.category}
+          </span>
+        )}
       </div>
 
       <h3 className="card-title" onClick={() => onCompare(product)} style={{ cursor: 'pointer' }}>
         {product.name}
       </h3>
       <div className="card-info">
-        {product.unit} • {product.shopName || 'Multiple Shops'}
+        {product.unit ? `${product.unit} • ` : ''}{product.shopName || 'Multiple Shops'}
       </div>
+
+      <button
+        type="button"
+        className={`product-alert-action ${isAlertOn ? 'active' : ''}`}
+        onClick={togglePriceAlert}
+        disabled={!Number.isFinite(product.price)}
+        aria-pressed={isAlertOn}
+      >
+        <span aria-hidden="true">♢</span>
+        {isAlertOn ? 'Price Alert On' : 'Set Price Alert'}
+      </button>
 
       <div className="card-footer">
         <div className="price-box">
@@ -83,7 +109,6 @@ export default function ProductCard({ product, onCompare }) {
           onClick={() => onCompare(product)}
           title="Compare prices"
         >
-          {/* Custom comparison / plus icon */}
           <svg
             width="14"
             height="14"

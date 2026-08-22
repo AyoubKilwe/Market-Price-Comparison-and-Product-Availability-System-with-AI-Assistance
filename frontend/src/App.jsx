@@ -7,11 +7,14 @@ import LandingPage from './pages/customer/LandingPage';
 import LoginPage from './pages/customer/LoginPage';
 import RegisterPage from './pages/customer/RegisterPage';
 import ShopCatalogPage from './pages/customer/ShopCatalogPage';
+import FavoritesPage from './pages/customer/FavoritesPage';
+import PriceAlertsPage from './pages/customer/PriceAlertsPage';
 
 // Vendor Pages
 import VendorShopProfilePage from './pages/vendor/VendorShopProfilePage';
 import VendorProductListingPage from './pages/vendor/VendorProductListingPage';
 import VendorPasswordPage from './pages/vendor/VendorPasswordPage';
+import VendorInsightsPage from './pages/vendor/VendorInsightsPage';
 
 // Admin Pages
 import AdminApprovalPage from './pages/admin/AdminApprovalPage';
@@ -51,7 +54,7 @@ export default function App() {
     if (normalizedRole === 'vendor') {
       setView('vendor-profile');
     } else if (normalizedRole === 'admin') {
-      setView('admin-product');
+      setView('admin-reporting');
     } else {
       setView('landing');
     }
@@ -72,12 +75,12 @@ export default function App() {
     }, 0);
   };
 
-  // Admin and vendor pages have their own sidebar — hide global navbar/footer
+  // Admin and vendor pages have their own sidebar â€” hide global navbar/footer
   const isDashboardView = view.startsWith('admin-') || view.startsWith('vendor-');
 
   return (
     <div className="app-container">
-      {/* Header / Navbar — hidden on dashboard views */}
+      {/* Header / Navbar â€” hidden on dashboard views */}
       {!isDashboardView && (
         <Navbar
           user={user}
@@ -89,7 +92,7 @@ export default function App() {
 
       {/* Pages Container */}
       <main style={{ flexGrow: 1 }}>
-        {view === 'landing' && <LandingPage />}
+        {view === 'landing' && <LandingPage onViewChange={setView} />}
 
         {view === 'login' && (
           <LoginPage onLoginSuccess={handleLoginSuccess} onViewChange={setView} />
@@ -107,6 +110,10 @@ export default function App() {
           <VendorProductListingPage user={user} onViewChange={setView} onSignOut={handleSignOut} />
         )}
 
+        {view === 'vendor-insights' && (
+          <VendorInsightsPage user={user} onViewChange={setView} onSignOut={handleSignOut} />
+        )}
+
         {view === 'vendor-settings' && (
           <VendorPasswordPage user={user} onViewChange={setView} onSignOut={handleSignOut} />
         )}
@@ -117,12 +124,14 @@ export default function App() {
         {view === 'admin-listings' && <AdminListingsOverviewPage onViewChange={setView} onSignOut={handleSignOut} />}
         {view === 'admin-reporting' && <AdminReportingPage onViewChange={setView} onSignOut={handleSignOut} />}
         {view === 'shop-catalog' && <ShopCatalogPage />}
+        {view === 'favorites' && <FavoritesPage onViewChange={setView} />}
+        {view === 'price-alerts' && <PriceAlertsPage />}
       </main>
 
       {/* AI assistant is available only on customer/public pages. */}
       {!isDashboardView && <AiAssistant />}
 
-      {/* Footer — hidden on dashboard views */}
+      {/* Footer â€” hidden on dashboard views */}
       {!isDashboardView && (
         <Footer onViewChange={setView} onLandingSection={handleLandingSection} />
       )}

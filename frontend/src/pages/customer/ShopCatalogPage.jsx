@@ -1,246 +1,165 @@
 import { useEffect, useMemo, useState } from 'react';
 import customerApi from './customerApi';
+import { toggleFavourite, useFavouriteIds } from '../../utils/favourites';
+
+const getVisitorId = () => {
+  let id = localStorage.getItem('marketeye_visitor_id');
+  if (!id) {
+    id = globalThis.crypto?.randomUUID?.() || `visitor-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    localStorage.setItem('marketeye_visitor_id', id);
+  }
+  return id;
+};
+const toRadians = (value) => (value * Math.PI) / 180;
+const distanceKm = (from, shop) => {
+  const dLat = toRadians(shop.latitude - from.latitude);
+  const dLng = toRadians(shop.longitude - from.longitude);
+  const value = Math.sin(dLat / 2) ** 2
+    + Math.cos(toRadians(from.latitude)) * Math.cos(toRadians(shop.latitude)) * Math.sin(dLng / 2) ** 2;
+  return 6371 * 2 * Math.atan2(Math.sqrt(value), Math.sqrt(1 - value));
+};
 
 export default function ShopCatalogPage() {
-  const [selectedCategory, setSelectedCategory] = useState('All');
   const [shops, setShops] = useState([]);
   const [selectedShop, setSelectedShop] = useState(null);
-  const [listings, setListings] = useState([]);
+  const [shopListings, setShopListings] = useState([]);
+  const [customerLocation, setCustomerLocation] = useState(null);
+  const [locationStatus, setLocationStatus] = useState('requesting');
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingShop, setIsLoadingShop] = useState(false);
+  const favouriteShopIds = useFavouriteIds('shop');
 
-  // Fetch approved shops from MongoDB
+  const requestLocation = () => {
+    if (!navigator.geolocation) {
+      setLocationStatus('unsupported');
+      return;
+    }
+    setLocationStatus('requesting');
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        setCustomerLocation({ latitude: coords.latitude, longitude: coords.longitude });
+        setLocationStatus('ready');
+      },
+      () => setLocationStatus('denied'),
+      { enableHighAccuracy: true, timeout: 12000 }
+    );
+  };
+
   useEffect(() => {
-    const fetchApprovedShops = async () => {
-      setIsLoading(true);
-      try {
-        const data = await customerApi.getApprovedShops();
-        const list = data.shops || [];
-        setShops(list);
-        if (list.length > 0) {
-          fetchShopDetails(list[0]._id);
-        }
-      } catch (error) {
-        console.error('Failed to load approved shops:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    if (!navigator.geolocation) {
+      Promise.resolve().then(() => setLocationStatus('unsupported'));
+    } else {
+      navigator.geolocation.getCurrentPosition(
+        ({ coords }) => {
+          setCustomerLocation({ latitude: coords.latitude, longitude: coords.longitude });
+          setLocationStatus('ready');
+        },
+        () => setLocationStatus('denied'),
+        { enableHighAccuracy: true, timeout: 12000 }
+      );
+    }
 
-    fetchApprovedShops();
+    customerApi.getApprovedShops()
+      .then((data) => {
+        const loadedShops = data.shops || [];
+        setShops(loadedShops);
+        const selectedId = sessionStorage.getItem('marketeye_selected_shop');
+        const chosenShop = loadedShops.find((shop) => shop._id === selectedId);
+        if (chosenShop) {
+          sessionStorage.removeItem('marketeye_selected_shop');
+          setSelectedShop(chosenShop);
+          setIsLoadingShop(true);
+          customerApi.getShopDetails(chosenShop._id)
+            .then((details) => {
+              customerApi.recordShopVisit(chosenShop._id, getVisitorId()).catch(() => {});
+              setSelectedShop(details.shop);
+              setShopListings(details.listings || []);
+            })
+            .finally(() => setIsLoadingShop(false));
+        }
+      })
+      .finally(() => setIsLoading(false));
   }, []);
 
-  const fetchShopDetails = async (shopId, shouldScroll = false) => {
+  const sortedShops = useMemo(() => shops
+    .map((shop) => ({
+      ...shop,
+      distance: customerLocation && Number.isFinite(shop.latitude) && Number.isFinite(shop.longitude)
+        ? distanceKm(customerLocation, shop)
+        : null,
+    }))
+    .sort((a, b) => {
+      if (a.distance == null) return 1;
+      if (b.distance == null) return -1;
+      return a.distance - b.distance;
+    }), [shops, customerLocation]);
+
+  const openShop = async (shop) => {
+    setSelectedShop(shop);
+    setIsLoadingShop(true);
     try {
-      const data = await customerApi.getShopDetails(shopId);
-      setSelectedShop(data.shop);
-      setListings(data.listings || []);
-      setSelectedCategory('All');
-      if (shouldScroll) {
-        window.setTimeout(() => {
-          document.getElementById('shop-details')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 0);
-      }
-    } catch (error) {
-      console.error('Failed to fetch shop details:', error);
+      const data = await customerApi.getShopDetails(shop._id);
+      customerApi.recordShopVisit(shop._id, getVisitorId()).catch(() => {});
+      setSelectedShop({ ...data.shop, distance: shop.distance });
+      setShopListings(data.listings || []);
+      window.setTimeout(() => document.getElementById('selected-shop')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
+    } finally {
+      setIsLoadingShop(false);
     }
   };
 
-  const categories = useMemo(() => {
-    const catSet = new Set(['All']);
-    listings.forEach((item) => {
-      if (item.product?.category) {
-        catSet.add(item.product.category);
-      }
-    });
-    return Array.from(catSet);
-  }, [listings]);
-
-  const filteredListings = useMemo(() => {
-    if (selectedCategory === 'All') return listings;
-    return listings.filter((item) => item.product?.category === selectedCategory);
-  }, [listings, selectedCategory]);
+  const recordProductView = (item) => {
+    customerApi.recordListingView(item._id, getVisitorId()).catch(() => {});
+  };
 
   return (
-    <div className="container shop-catalog-page" style={{ padding: '40px 24px' }}>
-      <div style={{ marginBottom: '32px' }}>
-        <h1 style={{ fontSize: '28px', fontWeight: '800', marginBottom: '8px' }}>Storefront Directory</h1>
-        <p style={{ color: 'var(--text-secondary)' }}>
-          Browse verified local retail shops and view their current inventory & price catalog.
-        </p>
-      </div>
-
-      {isLoading ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '60px' }}>
-          <div className="spinner spinner-teal"></div>
+    <main className="container customer-shops-page">
+      <header className="customer-shops-header">
+        <div><span>Verified local stores</span><h1>Shops near you</h1><p>Choose a shop to see its products and prices.</p></div>
+        <div className={`customer-location-pill ${locationStatus}`}>
+          <span>{locationStatus === 'ready' ? '✓' : locationStatus === 'requesting' ? '…' : '!'}</span>
+          <div>
+            <strong>{locationStatus === 'ready' ? 'Location on' : locationStatus === 'requesting' ? 'Allow location' : 'Location off'}</strong>
+            <small>{locationStatus === 'ready' ? 'Nearest shops shown first' : locationStatus === 'requesting' ? 'Check the browser popup' : 'Distance cannot be calculated'}</small>
+          </div>
+          {(locationStatus === 'denied' || locationStatus === 'unsupported') && <button type="button" onClick={requestLocation}>Try again</button>}
         </div>
-      ) : shops.length > 0 ? (
-        <div className="shop-directory-layout">
-          {/* Left Sidebar: Shops list */}
-          <div className="shop-selector-section">
-            <h3 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '16px' }}>Available Shops</h3>
-            <div className="shop-card-grid">
-              {shops.map((shop) => (
-                <button
-                  key={shop._id}
-                  type="button"
-                  onClick={() => fetchShopDetails(shop._id, true)}
-                  className={`shop-selector-card ${selectedShop?._id === shop._id ? 'active' : ''}`}
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'flex-start',
-                    padding: '12px 16px',
-                    borderRadius: '8px',
-                    border: '1px solid',
-                    borderColor: selectedShop?._id === shop._id ? 'var(--color-primary)' : 'var(--border-color)',
-                    backgroundColor: selectedShop?._id === shop._id ? '#f0fdf4' : '#ffffff',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    width: '100%',
-                  }}
-                >
-                  <div className="shop-selector-image">
-                    {shop.image ? <img src={shop.image} alt="" /> : <span>{shop.shopName?.[0] || 'S'}</span>}
-                  </div>
-                  <span style={{ fontWeight: '700', fontSize: '15px' }}>{shop.shopName}</span>
-                  <span style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                    📍 {shop.address || 'Hargeisa'}
-                  </span>
-                </button>
+      </header>
+
+      {isLoading ? <div className="customer-shop-empty">Loading shops...</div> : sortedShops.length === 0 ? <div className="customer-shop-empty"><strong>No shops available</strong><span>Approved shops with active products will appear here.</span></div> : (
+        <section className="customer-shop-grid" aria-label="Available shops">
+          {sortedShops.map((shop, index) => (
+            <div className="shop-card-shell" key={shop._id}>
+              <button type="button" className="customer-shop-card" onClick={() => openShop(shop)}>
+              <div className="customer-shop-card-image">{shop.image ? <img src={shop.image} alt="" /> : <span>{shop.shopName?.[0] || 'S'}</span>}</div>
+              <div className="customer-shop-card-body">
+                <div className="customer-shop-card-top"><h2>{shop.shopName}</h2>{index === 0 && shop.distance != null && <span className="closest-label">Closest</span>}</div>
+                <p>{shop.address}</p><span className="shop-card-phone"><b>☎</b> Phone: {shop.phone || 'Not provided'}</span>
+                <div className="customer-shop-card-footer"><strong>{shop.distance != null ? `${shop.distance.toFixed(1)} km away` : 'Distance unavailable'}</strong><span>View products →</span></div>
+              </div>
+              </button>
+              <button type="button" className={`shop-favourite-btn ${favouriteShopIds.includes(shop._id) ? 'active' : ''}`} onClick={() => toggleFavourite('shop', shop._id)} aria-label={favouriteShopIds.includes(shop._id) ? `Remove ${shop.shopName} from favourites` : `Add ${shop.shopName} to favourites`} aria-pressed={favouriteShopIds.includes(shop._id)}>♥</button>
+            </div>
+          ))}
+        </section>
+      )}
+
+      {selectedShop && (
+        <section id="selected-shop" className="selected-customer-shop">
+          <div className="selected-shop-heading"><div><span>Shop products</span><h2>{selectedShop.shopName}</h2><p>{selectedShop.address}{selectedShop.distance != null ? ` · ${selectedShop.distance.toFixed(1)} km away` : ''}</p></div><button type="button" onClick={() => setSelectedShop(null)} aria-label="Close">×</button></div>
+          {isLoadingShop ? <div className="customer-shop-empty">Loading products...</div> : shopListings.length === 0 ? <div className="customer-shop-empty">No products available.</div> : (
+            <div className="customer-product-grid">
+              {shopListings.map((item) => (
+                <article className="customer-product-card" key={item._id} onClick={() => recordProductView(item)}>
+                  <div className="customer-product-image">{item.product?.image ? <img src={item.product.image} alt="" /> : <span>{item.product?.name?.[0] || 'P'}</span>}</div>
+                  <div><span className="customer-product-category">{item.product?.category}</span><h3>{item.product?.name}</h3><p>{item.unit || '1 item'}</p></div>
+                  <div className="customer-product-price"><strong>${item.price.toFixed(2)}</strong><span className={`listing-status ${item.stockStatus.toLowerCase().replaceAll(' ', '-')}`}>{item.stockStatus}</span><button type="button" className="product-view-action">View product</button></div>
+                </article>
               ))}
             </div>
-          </div>
-
-          {/* Right Main Content: Shop catalog */}
-          <div id="shop-details" className="shop-catalog-detail">
-            {selectedShop ? (
-              <div>
-                <div
-                  className="shop-products-table"
-                  style={{
-                    backgroundColor: '#ffffff',
-                    padding: '24px',
-                    borderRadius: '12px',
-                    border: '1px solid var(--border-color)',
-                    marginBottom: '24px',
-                  }}
-                >
-                  {selectedShop.image && (
-                    <img
-                      className="customer-shop-banner"
-                      src={selectedShop.image}
-                      alt={`${selectedShop.shopName} banner`}
-                    />
-                  )}
-                  <div className="customer-shop-heading">
-                    <h2 style={{ fontSize: '22px', fontWeight: '800' }}>{selectedShop.shopName}</h2>
-                    <p style={{ color: 'var(--text-secondary)', marginTop: '4px' }}>
-                      Phone: {selectedShop.phone} • Address: {selectedShop.address || 'Hargeisa, Somaliland'}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Category Pills */}
-                {categories.length > 1 && (
-                  <div className="category-filter-bar shop-category-filter" aria-label="Filter shop products by category">
-                    {categories.map((cat) => (
-                      <button
-                        key={cat}
-                        type="button"
-                        onClick={() => setSelectedCategory(cat)}
-                        className={`category-filter-btn ${selectedCategory === cat ? 'active' : ''}`}
-                      >
-                        {cat}
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {/* Products Table */}
-                <div
-                  style={{
-                    backgroundColor: '#ffffff',
-                    borderRadius: '12px',
-                    border: '1px solid var(--border-color)',
-                    overflow: 'hidden',
-                  }}
-                >
-                  <div
-                    className="shop-products-head"
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: '2fr 1fr 1fr 1fr',
-                      padding: '14px 20px',
-                      backgroundColor: '#f8fafc',
-                      fontWeight: '700',
-                      fontSize: '13px',
-                      color: 'var(--text-secondary)',
-                      borderBottom: '1px solid var(--border-color)',
-                    }}
-                  >
-                    <span>Product Name</span>
-                    <span>Category</span>
-                    <span>Stock Status</span>
-                    <span>Price</span>
-                  </div>
-
-                  {filteredListings.length > 0 ? (
-                    filteredListings.map((item) => (
-                      <div
-                        key={item._id}
-                        className="shop-product-row"
-                        style={{
-                          display: 'grid',
-                          gridTemplateColumns: '2fr 1fr 1fr 1fr',
-                          padding: '14px 20px',
-                          alignItems: 'center',
-                          borderBottom: '1px solid #f1f5f9',
-                        }}
-                      >
-                        <div style={{ fontWeight: '600' }}>
-                          {item.product?.name}
-                          <span style={{ fontSize: '12px', color: 'var(--text-secondary)', marginLeft: '6px' }}>
-                            ({item.unit || '1 item'})
-                          </span>
-                        </div>
-                        <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-                          {item.product?.category}
-                        </div>
-                        <div>
-                          <span
-                            className={
-                              item.stockStatus === 'In Stock'
-                                ? 'listing-status in-stock'
-                                : item.stockStatus === 'Low Stock'
-                                ? 'listing-status low-stock'
-                                : 'listing-status out-of-stock'
-                            }
-                          >
-                            {item.stockStatus}
-                          </span>
-                        </div>
-                        <div style={{ fontWeight: '700', color: 'var(--color-primary)' }}>
-                          ${item.price?.toFixed(2)}
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-secondary)' }}>
-                      No product listings available in this shop yet.
-                    </div>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div style={{ padding: '32px', textAlign: 'center' }}>Select a shop to view its catalog.</div>
-            )}
-          </div>
-        </div>
-      ) : (
-        <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-secondary)' }}>
-          No approved shops available yet.
-        </div>
+          )}
+        </section>
       )}
-    </div>
+    </main>
   );
 }

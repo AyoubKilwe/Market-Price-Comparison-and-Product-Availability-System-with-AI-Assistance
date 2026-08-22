@@ -1,8 +1,38 @@
 import { useEffect, useMemo, useState } from 'react';
 import ProductCard from '../../components/ProductCard';
 import customerApi from './customerApi';
+import { toggleFavourite, useFavouriteIds } from '../../utils/favourites';
+import { announcePriceAlertChange, priceAlertApi, usePriceAlertSummary } from '../../utils/priceAlerts';
 
 const PRICE_ALERTS_KEY = 'marketeye_price_alerts';
+
+const BASE_CATEGORIES = [
+  { id: 'All', label: 'All Products', en: 'All Products', icon: '✨' },
+  { id: 'Raashin', label: 'Raashin', en: 'Groceries', icon: '🍚' },
+  { id: 'Alaabta Guriga', label: 'Alaabta Guriga', en: 'Household', icon: '🧼' },
+  { id: 'Sharaab', label: 'Sharaab', en: 'Beverages', icon: '🧃' },
+  { id: 'Khudaar iyo Miro', label: 'Khudaar & Miro', en: 'Fruits & Veggies', icon: '🥑' },
+  { id: 'Hilib iyo Kalluun', label: 'Hilib & Kalluun', en: 'Meat & Fish', icon: '🥩' },
+];
+
+const CATEGORY_ICON_MAP = {
+  all: '✨',
+  raashin: '🍚',
+  'alaabta guriga': '🧼',
+  sharaab: '🧃',
+  'khudaar iyo miro': '🥑',
+  khudaar: '🥬',
+  miro: '🍎',
+  'hilib iyo kalluun': '🥩',
+  hilib: '🍖',
+  kalluun: '🐟',
+  default: '📦',
+};
+
+const getCategoryIcon = (categoryName = '') => {
+  const normalized = categoryName.trim().toLowerCase();
+  return CATEGORY_ICON_MAP[normalized] || CATEGORY_ICON_MAP.default;
+};
 
 const readSavedAlerts = () => {
   try {
@@ -12,387 +42,493 @@ const readSavedAlerts = () => {
   }
 };
 
-export default function LandingPage() {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [selectedProductComparison, setSelectedProductComparison] = useState(null);
-  const [isLoadingComparison, setIsLoadingComparison] = useState(false);
-  const [featuredDeals, setFeaturedDeals] = useState([]);
-  const [isLoadingDeals, setIsLoadingDeals] = useState(true);
-  const [dealsError, setDealsError] = useState('');
-  const [selectedDealCategory, setSelectedDealCategory] = useState('All');
+const radians = (value) => (value * Math.PI) / 180;
+const getDistance = (from, shop) => {
+  const lat = radians(shop.latitude - from.latitude);
+  const lng = radians(shop.longitude - from.longitude);
+  const value = Math.sin(lat / 2) ** 2 + Math.cos(radians(from.latitude)) * Math.cos(radians(shop.latitude)) * Math.sin(lng / 2) ** 2;
+  return 6371 * 2 * Math.atan2(Math.sqrt(value), Math.sqrt(1 - value));
+};
+
+export default function LandingPage({ onViewChange }) {
+  const [search, setSearch] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [allProducts, setAllProducts] = useState([]);
+  const [searchResults, setSearchResults] = useState(null);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [shops, setShops] = useState([]);
+  const [location, setLocation] = useState(null);
   const [priceAlerts, setPriceAlerts] = useState(readSavedAlerts);
   const [alertMessage, setAlertMessage] = useState('');
-
-  const dealCategories = useMemo(
-    () => ['All', ...new Set(featuredDeals.map((deal) => deal.category).filter(Boolean))],
-    [featuredDeals]
-  );
-
-  const filteredFeaturedDeals = useMemo(
-    () => selectedDealCategory === 'All'
-      ? featuredDeals
-      : featuredDeals.filter((deal) => deal.category === selectedDealCategory),
-    [featuredDeals, selectedDealCategory]
-  );
+  const favouriteShopIds = useFavouriteIds('shop');
+  const { alertIds } = usePriceAlertSummary();
 
   useEffect(() => {
-    const loadFeaturedDeals = async () => {
-      try {
-        const data = await customerApi.getFeaturedListings();
-        setFeaturedDeals((data.deals || []).map(({ product, listing, shopCount }) => ({
-          id: product._id,
-          name: product.name,
-          unit: listing.unit || '1 item',
-          category: product.category,
-          image: product.image,
-          price: listing.price,
-          shopName: shopCount > 1 ? `${shopCount} shops` : listing.shop?.shopName,
-          badge: 'Best Value',
-        })));
-      } catch (error) {
-        setDealsError(error.message || 'Could not load current deals.');
-      } finally {
-        setIsLoadingDeals(false);
-      }
-    };
+    customerApi.getApprovedShops()
+      .then((data) => setShops(data.shops || []))
+      .catch(() => setShops([]));
 
-    loadFeaturedDeals();
+    navigator.geolocation?.getCurrentPosition(
+      ({ coords }) => setLocation({ latitude: coords.latitude, longitude: coords.longitude }),
+      () => { },
+      { enableHighAccuracy: true, timeout: 12000 }
+    );
   }, []);
 
+  // Fetch initial products and featured deals
+  useEffect(() => {
+    setIsLoading(true);
+    Promise.all([
+      customerApi.getFeaturedListings().catch(() => ({ deals: [] })),
+      customerApi.getProducts().catch(() => ({ products: [] })),
+    ])
+      .then(([featuredData, productsData]) => {
+        const dealsMap = new Map();
+        (featuredData.deals || []).forEach(({ product, listing, shopCount }) => {
+          if (!product?._id) return;
+          dealsMap.set(product._id.toString(), {
+            price: listing.price,
+            unit: listing.unit || product.unit,
+            shopName: `${shopCount} ${shopCount === 1 ? 'shop' : 'shops'}`,
+            image: product.image,
+            category: product.category,
+            name: product.name,
+          });
+        });
+
+        // Combine official products with listing price info
+        const productsList = (productsData.products || []).map((prod) => {
+          const deal = dealsMap.get(prod._id.toString());
+          return {
+            id: prod._id,
+            name: prod.name,
+            unit: deal?.unit || prod.unit || '1 xabo',
+            category: prod.category || 'Raashin',
+            image: prod.image,
+            price: deal ? deal.price : null,
+            shopName: deal ? deal.shopName : 'Available in shops',
+          };
+        });
+
+        // If official products list was empty, fallback directly to featured deals
+        if (productsList.length === 0 && (featuredData.deals || []).length > 0) {
+          const fallback = (featuredData.deals || []).map(({ product, listing, shopCount }) => ({
+            id: product._id,
+            name: product.name,
+            unit: listing.unit || product.unit || '1 xabo',
+            category: product.category || 'Raashin',
+            image: product.image,
+            price: listing.price,
+            shopName: `${shopCount} ${shopCount === 1 ? 'shop' : 'shops'}`,
+          }));
+          setAllProducts(fallback);
+        } else {
+          setAllProducts(productsList);
+        }
+      })
+      .finally(() => setIsLoading(false));
+  }, []);
+
+  // Search effect
+  useEffect(() => {
+    const query = search.trim();
+    if (query.length < 2) {
+      setSearchResults(null);
+      return;
+    }
+    const timer = window.setTimeout(async () => {
+      try {
+        const data = await customerApi.getProducts(query);
+        const formatted = await Promise.all((data.products || []).map(async (product) => {
+          const comparison = await customerApi.getProductListings(product._id).catch(() => null);
+          return {
+            id: product._id,
+            name: product.name,
+            unit: product.unit || '1 xabo',
+            category: product.category || 'Raashin',
+            image: product.image,
+            price: comparison?.summary?.lowest ?? null,
+            shopName: comparison?.listings?.length ? `${comparison.listings.length} shops` : 'Not available',
+          };
+        }));
+        setSearchResults(formatted);
+      } catch {
+        setSearchResults([]);
+      }
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [search]);
+
+  // Price alert background checker
   useEffect(() => {
     const checkSavedAlerts = async () => {
       const savedAlerts = readSavedAlerts();
       if (!savedAlerts.length) return;
 
-      const checkedAlerts = await Promise.all(
-        savedAlerts.map(async (alert) => {
-          try {
-            const comparison = await customerApi.getProductListings(alert.productId);
-            const currentPrice = comparison.summary?.lowest;
-            const previousPrice = Number(alert.lastPrice);
-            const priceChanged = currentPrice != null &&
-              Number.isFinite(previousPrice) &&
-              currentPrice !== previousPrice;
-
-            if (priceChanged) {
-              const message = `${alert.productName} price changed from $${previousPrice.toFixed(2)} to $${currentPrice.toFixed(2)}.`;
-              setAlertMessage(message);
-
-              if ('Notification' in window && Notification.permission === 'granted') {
-                new Notification('MarketEye Price Alert', { body: message });
-              }
-
-              return {
-                ...alert,
-                previousPrice,
-                lastPrice: currentPrice,
-              };
-            }
-
-            return currentPrice == null ? alert : { ...alert, lastPrice: currentPrice };
-          } catch {
-            return alert;
+      const checkedAlerts = await Promise.all(savedAlerts.map(async (alert) => {
+        try {
+          const comparison = await customerApi.getProductListings(alert.productId);
+          const currentPrice = comparison.summary?.lowest;
+          const previousPrice = Number(alert.lastPrice);
+          const priceChanged = Number.isFinite(currentPrice) && Number.isFinite(previousPrice) && currentPrice !== previousPrice;
+          if (priceChanged) {
+            const message = alert.productName + ' price changed from $' + previousPrice.toFixed(2) + ' to $' + currentPrice.toFixed(2) + '.';
+            setAlertMessage(message);
+            if ('Notification' in window && Notification.permission === 'granted') new Notification('MarketEye Price Alert', { body: message });
+            return { ...alert, previousPrice, lastPrice: currentPrice };
           }
-        })
-      );
-
+          return Number.isFinite(currentPrice) ? { ...alert, lastPrice: currentPrice } : alert;
+        } catch {
+          return alert;
+        }
+      }));
       localStorage.setItem(PRICE_ALERTS_KEY, JSON.stringify(checkedAlerts));
       setPriceAlerts(checkedAlerts);
     };
-
     checkSavedAlerts();
-    const alertCheckInterval = window.setInterval(checkSavedAlerts, 30000);
-
-    return () => window.clearInterval(alertCheckInterval);
+    const intervalId = window.setInterval(checkSavedAlerts, 30000);
+    return () => window.clearInterval(intervalId);
   }, []);
 
-  const savePriceAlert = async () => {
-    const product = selectedProductComparison?.product;
-    const currentPrice = selectedProductComparison?.summary?.lowest;
-    if (!product?._id || !Number.isFinite(currentPrice)) return;
+  const nearbyShops = useMemo(() => shops.map((shop) => ({
+    ...shop,
+    distance: location && Number.isFinite(shop.latitude) && Number.isFinite(shop.longitude) ? getDistance(location, shop) : null,
+  })).sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity)).slice(0, 6), [shops, location]);
 
-    const newAlert = {
-      productId: product._id,
-      productName: product.name,
-      lastPrice: currentPrice,
-    };
-    const nextAlerts = [
-      ...priceAlerts.filter((alert) => alert.productId !== product._id),
-      newAlert,
-    ];
-
-    localStorage.setItem(PRICE_ALERTS_KEY, JSON.stringify(nextAlerts));
-    setPriceAlerts(nextAlerts);
-    setAlertMessage(`MarketEye is tracking ${product.name} from $${currentPrice.toFixed(2)}.`);
-
-    if ('Notification' in window && Notification.permission === 'default') {
-      await Notification.requestPermission();
-    }
+  const openShop = (shopId) => {
+    sessionStorage.setItem('marketeye_selected_shop', shopId);
+    onViewChange?.('shop-catalog');
   };
 
-  const removePriceAlert = (productId) => {
+  // Build dynamic categories list and count available products
+  const categoriesWithCounts = useMemo(() => {
+    const baseList = [...BASE_CATEGORIES];
+    const presentCategories = new Set(allProducts.map((p) => p.category?.trim()).filter(Boolean));
+
+    // Add any category from DB that isn't in base list
+    presentCategories.forEach((cat) => {
+      if (!baseList.some((b) => b.id.toLowerCase() === cat.toLowerCase())) {
+        baseList.push({
+          id: cat,
+          label: cat,
+          en: cat,
+          icon: getCategoryIcon(cat),
+        });
+      }
+    });
+
+    return baseList.map((cat) => {
+      let count = 0;
+      if (cat.id === 'All') {
+        count = allProducts.length;
+      } else {
+        count = allProducts.filter((p) => (p.category || '').trim().toLowerCase() === cat.id.toLowerCase()).length;
+      }
+      return { ...cat, count };
+    });
+  }, [allProducts]);
+
+  // Compute products shown based on category filter and search
+  const shownProducts = useMemo(() => {
+    const sourceProducts = searchResults !== null ? searchResults : allProducts;
+
+    return sourceProducts.filter((product) => {
+      if (selectedCategory === 'All') return true;
+      return (product.category || '').trim().toLowerCase() === selectedCategory.trim().toLowerCase();
+    });
+  }, [searchResults, allProducts, selectedCategory]);
+
+  const compare = async (product) => {
+    const data = await customerApi.getProductListings(product.id).catch(() => null);
+    setSelectedProduct(data || { product, listings: [] });
+    window.setTimeout(() => document.getElementById('simple-comparison')?.scrollIntoView({ behavior: 'smooth' }), 0);
+  };
+
+  const savePriceAlert = async () => {
+    const product = selectedProduct?.product;
+    const currentPrice = selectedProduct?.summary?.lowest;
+    if (!product?._id || !Number.isFinite(currentPrice)) return;
+    const nextAlerts = [
+      ...priceAlerts.filter((alert) => alert.productId !== product._id),
+      { productId: product._id, productName: product.name, lastPrice: currentPrice },
+    ];
+    await priceAlertApi.addAlert(product._id);
+    localStorage.setItem(PRICE_ALERTS_KEY, JSON.stringify(nextAlerts));
+    setPriceAlerts(nextAlerts);
+    announcePriceAlertChange();
+    setAlertMessage('MarketEye is tracking ' + product.name + ' from $' + currentPrice.toFixed(2) + '.');
+    if ('Notification' in window && Notification.permission === 'default') await Notification.requestPermission();
+  };
+
+  const removePriceAlert = async (productId) => {
+    await priceAlertApi.removeAlert(productId);
     const nextAlerts = priceAlerts.filter((alert) => alert.productId !== productId);
     localStorage.setItem(PRICE_ALERTS_KEY, JSON.stringify(nextAlerts));
     setPriceAlerts(nextAlerts);
     setAlertMessage('Price alert removed.');
-  };
-
-  // Perform search on backend API
-  const handleSearch = async (queryText) => {
-    const trimmed = queryText.trim();
-    if (!trimmed) {
-      setSearchResults([]);
-      return;
-    }
-
-    setIsSearching(true);
-    try {
-      const data = await customerApi.getProducts(trimmed);
-      if (data.products) {
-        const comparisons = await Promise.all(
-          data.products.map(async (product) => {
-            try {
-              return await customerApi.getProductListings(product._id);
-            } catch {
-              return null;
-            }
-          })
-        );
-        const formatted = data.products.map((p, index) => ({
-          id: p._id,
-          name: p.name,
-          unit: p.unit || p.category,
-          price: comparisons[index]?.summary?.lowest ?? null,
-          shopName: comparisons[index]?.listings?.length
-            ? `${comparisons[index].listings.length} shop${comparisons[index].listings.length === 1 ? '' : 's'}`
-            : 'No active listings',
-          category: p.category,
-          image: p.image || ''
-        }));
-        setSearchResults(formatted);
-      }
-    } catch (err) {
-      console.error('Failed to search products:', err);
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
-  // Perform comparison on backend API
-  const handleCompareProduct = async (product) => {
-    setIsLoadingComparison(true);
-    try {
-      const data = await customerApi.getProductListings(product.id);
-      setSelectedProductComparison(data);
-      setTimeout(() => {
-        document.getElementById('comparison-view')?.scrollIntoView({ behavior: 'smooth' });
-      }, 100);
-    } catch (err) {
-      console.error('Error fetching comparison:', err);
-      setSelectedProductComparison({
-        product: { name: product.name, unit: product.unit },
-        summary: { lowest: null, highest: null, average: null },
-        listings: []
-      });
-      setTimeout(() => {
-        document.getElementById('comparison-view')?.scrollIntoView({ behavior: 'smooth' });
-      }, 100);
-    } finally {
-      setIsLoadingComparison(false);
-    }
+    announcePriceAlertChange();
   };
 
   return (
-    <div className="main-content">
+    <main className="simple-landing">
       {alertMessage && (
         <div className="price-alert-notice" role="status">
           <span>{alertMessage}</span>
-          <button type="button" onClick={() => setAlertMessage('')} aria-label="Close notification">
-            Close
-          </button>
+          <button type="button" onClick={() => setAlertMessage('')} aria-label="Close notification">X</button>
         </div>
       )}
 
       {/* Hero Section */}
-      <section id="comparison-search" className="hero-section">
-        <h1 className="hero-title">
-          Compare prices of everyday essentials. <span className="teal-highlight">Instantly.</span>
-        </h1>
-        <p className="hero-subtitle">
-          Stop overpaying for basics. MarketEye tracks real-time prices for Rice, Sugar, Milk, and thousands of other items across local and national retailers.
-        </p>
-
-        {/* Search Input Box */}
-        <form
-          className="search-container"
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleSearch(searchQuery);
-          }}
-        >
-          <div className="search-wrapper">
-            <span className="search-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <circle cx="11" cy="11" r="8"></circle>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-              </svg>
-            </span>
-            <input
-              type="text"
-              className="search-input"
-              placeholder="Search for Rice, Sugar, Milk..."
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                if (e.target.value.length > 2) {
-                  handleSearch(e.target.value);
-                } else if (e.target.value.length === 0) {
-                  setSearchResults([]);
-                }
-              }}
-            />
-            <button type="submit" className="btn btn-black" style={{ borderRadius: '8px' }}>
-              Compare Now
-            </button>
+      <section className="simple-landing-hero fresh-hero">
+        <div className="simple-hero-copy fresh-hero-copy">
+          <span className="simple-hero-kicker"><i></i> Local prices, made simple</span>
+          <h1>Everything you need, <em>closer than you think.</em></h1>
+          <p>Discover verified shops near you, check what is available, and choose the best price before you go.</p>
+          <div className="simple-hero-actions">
+            <button type="button" className="simple-primary-action fresh-primary-action" onClick={() => onViewChange?.('shop-catalog')}><span>&#9906;</span> Explore nearby shops</button>
+            <a href="#products">See today's products <span>&darr;</span></a>
           </div>
-
-          {featuredDeals.length > 0 && (
-            <div className="trending-list">
-              <span>AVAILABLE NOW:</span>
-              {featuredDeals.slice(0, 3).map((deal) => (
-                <button
-                  key={deal.id}
-                  type="button"
-                  className="tag"
-                  onClick={() => handleCompareProduct(deal)}
-                >
-                  {deal.name}
-                </button>
-              ))}
-            </div>
-          )}
-        </form>
+          <div className="fresh-hero-trust"><span>&#10003; Verified shops</span><span>&#10003; Current prices</span><span>&#9906; Private location</span></div>
+        </div>
+        <div className="fresh-hero-visual" aria-hidden="true">
+          <div className="visual-orbit orbit-one"></div><div className="visual-orbit orbit-two"></div>
+          <div className="visual-center-pin"><span>&#9906;</span><small>You</small></div>
+          <div className="visual-shop-card visual-shop-one"><b>A</b><div><strong>Amal Market</strong><span>0.8 km away</span></div><em>Closest</em></div>
+          <div className="visual-shop-card visual-shop-two"><b>B</b><div><strong>Barwaaqo Shop</strong><span>1.4 km away</span></div></div>
+          <div className="visual-shop-card visual-shop-three"><b>S</b><div><strong>Sahal Store</strong><span>2.1 km away</span></div></div>
+        </div>
       </section>
 
-      {/* Comparison Drawer / Detail Area */}
-      {isLoadingComparison && (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}>
-          <div className="spinner spinner-teal"></div>
+      {/* Nearby Shops Showcase */}
+      <section className="landing-shops-section">
+        <div className="simple-section-heading">
+          <div><span>Closest first</span><h2>Nearby shops</h2></div>
+          <button type="button" className="landing-view-all" onClick={() => onViewChange?.('shop-catalog')}>View all shops &rarr;</button>
         </div>
-      )}
+        {nearbyShops.length > 0 ? (
+          <div className="customer-shop-grid landing-shop-grid">
+            {nearbyShops.map((shop, index) => (
+              <div className="shop-card-shell" key={shop._id}>
+                <button type="button" className="customer-shop-card" onClick={() => openShop(shop._id)}>
+                  <div className="customer-shop-card-image">{shop.image ? <img src={shop.image} alt="" /> : <span>{shop.shopName?.[0] || 'S'}</span>}</div>
+                  <div className="customer-shop-card-body">
+                    <div className="customer-shop-card-top"><h2>{shop.shopName}</h2>{index === 0 && shop.distance != null && <span className="closest-label">Closest</span>}</div>
+                    <p>{shop.address}</p><span className="shop-card-phone"><b>Tel</b> Phone: {shop.phone || 'Not provided'}</span>
+                    <div className="customer-shop-card-footer"><strong>{shop.distance != null ? `${shop.distance.toFixed(1)} km away` : 'Location needed'}</strong><span>View products &rarr;</span></div>
+                  </div>
+                </button>
+                <button type="button" className={`shop-favourite-btn ${favouriteShopIds.includes(shop._id) ? 'active' : ''}`} onClick={() => toggleFavourite('shop', shop._id)} aria-label={favouriteShopIds.includes(shop._id) ? `Remove ${shop.shopName} from favourites` : `Add ${shop.shopName} to favourites`} aria-pressed={favouriteShopIds.includes(shop._id)}>&#9829;</button>
+              </div>
+            ))}
+          </div>
+        ) : <div className="no-results">Loading nearby shops...</div>}
+      </section>
 
-      {selectedProductComparison && (
-        <section id="comparison-view" className="comparison-section">
-          <div className="comparison-header">
-            <div>
-              <h2 className="comparison-title">{selectedProductComparison.product.name}</h2>
-              <p style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
-                Comparing current prices and selling quantities across registered shops
-              </p>
-            </div>
-            <div className="comparison-actions">
+      {/* Products & Prices with Interactive Category Filter */}
+      <section id="products" className="simple-products-section">
+        <div className="simple-section-heading">
+          <div>
+            <span className="products-kicker">Categories & Prices</span>
+            <h2>Products and prices</h2>
+          </div>
+          <label className="simple-product-search">
+            <span className="search-icon">🔍</span>
+            <input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search products (e.g. Rice, Oil)..."
+            />
+            {search && (
+              <button type="button" className="clear-search-btn" onClick={() => setSearch('')} title="Clear search">
+                ×
+              </button>
+            )}
+          </label>
+        </div>
+
+        {/* Stunning Category Navigation Pills */}
+        <div className="category-filter-wrapper">
+          <div className="category-filter-header">
+            <span className="category-filter-title">Filter by Category:</span>
+            {selectedCategory !== 'All' && (
               <button
                 type="button"
-                className="price-alert-button"
-                onClick={savePriceAlert}
-                disabled={!Number.isFinite(selectedProductComparison.summary?.lowest)}
+                className="category-reset-link"
+                onClick={() => setSelectedCategory('All')}
               >
-                {priceAlerts.some((alert) => alert.productId === selectedProductComparison.product._id)
-                  ? 'Price Alert On'
-                  : 'Track Price Drops'}
+                Show All ({allProducts.length}) &times;
               </button>
-              <button
-                type="button"
-                className="comparison-close-btn"
-                onClick={() => setSelectedProductComparison(null)}
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path d="M18 6 6 18M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
+            )}
           </div>
 
-          {selectedProductComparison.listings && selectedProductComparison.listings.length > 0 ? (
-            <>
-              {/* Summary Cards */}
-              <div className="summary-cards">
-                <div className="summary-card cheapest-card">
-                  <div className="summary-card-label">Cheapest Price</div>
-                  <div className="summary-card-value">
-                    ${selectedProductComparison.summary.lowest?.toFixed(2)}
-                  </div>
-                </div>
-                <div className="summary-card">
-                  <div className="summary-card-label">Highest Price</div>
-                  <div className="summary-card-value">
-                    ${selectedProductComparison.summary.highest?.toFixed(2)}
-                  </div>
-                </div>
-              </div>
+          <div className="category-pills-container" role="tablist" aria-label="Product categories">
+            {categoriesWithCounts.map((cat) => {
+              const isSelected = selectedCategory.toLowerCase() === cat.id.toLowerCase();
+              return (
+                <button
+                  type="button"
+                  key={cat.id}
+                  role="tab"
+                  aria-selected={isSelected}
+                  className={`category-pill-btn ${isSelected ? 'active' : ''}`}
+                  onClick={() => setSelectedCategory(cat.id)}
+                >
+                  <span className="category-pill-icon">{cat.icon}</span>
+                  <span className="category-pill-label">{cat.label}</span>
+                  {cat.count > 0 && (
+                    <span className="category-pill-count">{cat.count}</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
-              {/* Table */}
-              <div className="comparison-table-wrapper">
-                <table className="comparison-table">
-                  <thead>
-                    <tr>
-                      <th>Retailer / Shop</th>
-                      <th>Availability</th>
-                      <th>Price</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {selectedProductComparison.listings.map((item, index) => (
-                      <tr key={index}>
-                        <td>
-                          <div className="shop-info-cell">
-                            <span className="shop-cell-name">{item.shop?.shopName}</span>
-                            <span className="shop-cell-sub">
-                              {item.shop?.address} • {item.shop?.phone}
-                            </span>
-                          </div>
-                        </td>
-                        <td>
-                          <span
-                            className={`stock-badge ${
-                              item.stockStatus === 'In Stock'
-                                ? 'stock-instock'
-                                : item.stockStatus === 'Low Stock'
-                                ? 'stock-lowstock'
-                                : 'stock-outstock'
-                            }`}
-                          >
-                            {item.stockStatus}
-                          </span>
-                        </td>
-                        <td>
-                          <span className="price-cell">${item.price.toFixed(2)}</span>
-                          <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '3px' }}>
-                            {item.unit || '1 item'}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </>
-          ) : (
-            <div className="no-results">
-              No active listings found for this product. Approved vendors have not posted stock yet.
+        {/* Products Grid or Empty State */}
+        {isLoading ? (
+          <div className="products-loading-state">
+            <div className="loading-spinner"></div>
+            <span>Loading products and prices...</span>
+          </div>
+        ) : shownProducts.length > 0 ? (
+          <div className="products-grid">
+            {shownProducts.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                onCompare={compare}
+                alertIds={alertIds}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="category-empty-state">
+            <span className="empty-icon">{getCategoryIcon(selectedCategory)}</span>
+            <h3>No products found in "{selectedCategory}"</h3>
+            <p>
+              {search.trim()
+                ? `No products matching "${search}" in this category.`
+                : 'There are currently no products available in this category.'}
+            </p>
+            <div className="empty-actions">
+              {selectedCategory !== 'All' && (
+                <button
+                  type="button"
+                  className="empty-reset-btn"
+                  onClick={() => {
+                    setSelectedCategory('All');
+                    setSearch('');
+                  }}
+                >
+                  View all products ({allProducts.length})
+                </button>
+              )}
             </div>
-          )}
-        </section>
-      )}
+          </div>
+        )}
+      </section>
 
+      {/* Comparison Drawer / Modal */}
+      {selectedProduct && (() => {
+        const listings = [...(selectedProduct.listings || [])].sort((a, b) => a.price - b.price);
+        const lowestListing = listings[0];
+        const highestListing = listings[listings.length - 1];
+        const savings = listings.length > 1 ? highestListing.price - lowestListing.price : 0;
+
+        return (
+          <section id="simple-comparison" className="simple-comparison comparison-panel">
+            <div className="simple-comparison-heading">
+              <div>
+                <span>Price comparison</span>
+                <h2>{selectedProduct.product?.name}</h2>
+                <p>Compare every available shop and choose the best price.</p>
+              </div>
+              <div className="comparison-actions">
+                <button
+                  type="button"
+                  className="price-alert-button"
+                  onClick={savePriceAlert}
+                  disabled={!Number.isFinite(selectedProduct.summary?.lowest)}
+                >
+                  {priceAlerts.some((alert) => alert.productId === selectedProduct.product?._id)
+                    ? 'Price Alert On'
+                    : 'Track Price Drops'}
+                </button>
+                <button
+                  type="button"
+                  className="comparison-close-btn"
+                  onClick={() => setSelectedProduct(null)}
+                >
+                  X
+                </button>
+              </div>
+            </div>
+            {listings.length > 0 ? (
+              <>
+                <div className="comparison-price-summary">
+                  <article className="comparison-price-card comparison-lowest-card">
+                    <div className="comparison-card-top">
+                      <span className="comparison-card-icon">↓</span>
+                      <span className="comparison-card-label">Lowest price</span>
+                      <em>Best deal</em>
+                    </div>
+                    <strong>${lowestListing.price.toFixed(2)}</strong>
+                    <p>at {lowestListing.shop?.shopName || 'Vendor shop'}</p>
+                  </article>
+                  <article className="comparison-price-card comparison-highest-card">
+                    <div className="comparison-card-top">
+                      <span className="comparison-card-icon">↑</span>
+                      <span className="comparison-card-label">Highest price</span>
+                    </div>
+                    <strong>${highestListing.price.toFixed(2)}</strong>
+                    <p>at {highestListing.shop?.shopName || 'Vendor shop'}</p>
+                  </article>
+                </div>
+                {savings > 0 && (
+                  <div className="comparison-savings-note">
+                    <span>✓</span>
+                    <p>Choose the lowest price and save <strong>${savings.toFixed(2)}</strong>.</p>
+                  </div>
+                )}
+                <div className="comparison-list-heading">
+                  <span>Shop</span>
+                  <span>Availability</span>
+                  <span>Price</span>
+                </div>
+                <div className="simple-comparison-list">
+                  {listings.map((item, index) => (
+                    <div className={index === 0 ? 'best-price-row' : ''} key={item._id}>
+                      <div className="comparison-shop-details">
+                        <strong>
+                          {item.shop?.shopName || 'Vendor shop'}
+                          {index === 0 && <small>Best price</small>}
+                        </strong>
+                        {item.shop?.address && <span>{item.shop.address}</span>}
+                        {item.shop?.phone && <a href={`tel:${item.shop.phone}`}>Phone: {item.shop.phone}</a>}
+                      </div>
+                      <span className={`comparison-stock ${item.stockStatus?.toLowerCase().replaceAll(' ', '-') || ''}`}>
+                        {item.stockStatus || 'Availability unknown'}
+                      </span>
+                      <b>${item.price.toFixed(2)}</b>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="no-results">This product is not available right now.</div>
+            )}
+          </section>
+        );
+      })()}
+
+      {/* Saved Alerts Section */}
       {priceAlerts.length > 0 && (
         <section className="saved-alerts-section" aria-labelledby="saved-alerts-title">
           <div>
-            <span className="about-kicker">PRICE ALERTS</span>
+            <span className="simple-hero-kicker">Price alerts</span>
             <h2 id="saved-alerts-title">Your saved alerts</h2>
-            <p>MarketEye notifies you whenever a saved product price changes.</p>
+            <p>MarketEye checks saved products and notifies you whenever their price changes.</p>
           </div>
           <div className="saved-alerts-list">
             {priceAlerts.map((alert) => (
@@ -400,192 +536,17 @@ export default function LandingPage() {
                 <div>
                   <strong>{alert.productName}</strong>
                   {Number.isFinite(Number(alert.previousPrice)) ? (
-                    <span>
-                      Previous price: ${Number(alert.previousPrice).toFixed(2)} · New price: ${Number(alert.lastPrice).toFixed(2)}
-                    </span>
+                    <span>Previous: ${Number(alert.previousPrice).toFixed(2)} - Current: ${Number(alert.lastPrice).toFixed(2)}</span>
                   ) : (
-                    <span>
-                      Current price: ${Number.isFinite(Number(alert.lastPrice))
-                        ? Number(alert.lastPrice).toFixed(2)
-                        : 'not recorded'}
-                    </span>
+                    <span>Current price: ${Number.isFinite(Number(alert.lastPrice)) ? Number(alert.lastPrice).toFixed(2) : 'not recorded'}</span>
                   )}
                 </div>
-                <button type="button" onClick={() => removePriceAlert(alert.productId)}>
-                  Remove
-                </button>
+                <button type="button" onClick={() => removePriceAlert(alert.productId)}>Remove</button>
               </div>
             ))}
           </div>
         </section>
       )}
-
-      {/* Search Results / Product list */}
-      {searchQuery.trim() !== '' && (
-        <section className="deals-section" style={{ borderBottom: '1px solid var(--color-border)' }}>
-          <div className="section-header">
-            <div className="section-title-group">
-              <h2>Search Results for "{searchQuery}"</h2>
-              <p>Found {searchResults.length} matching official products</p>
-            </div>
-          </div>
-
-          {isSearching ? (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '48px' }}>
-              <div className="spinner spinner-teal"></div>
-            </div>
-          ) : searchResults.length > 0 ? (
-            <div className="products-grid">
-              {searchResults.map((product) => (
-                <ProductCard
-                  key={product.id}
-                  product={{
-                    ...product
-                  }}
-                  onCompare={handleCompareProduct}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="no-results">
-              No products found. Try typing a generic word like "rice", "sugar", or "milk".
-            </div>
-          )}
-        </section>
-      )}
-
-      {/* Top Deals Today Section */}
-      <section id="all-deals" className="deals-section">
-        <div className="section-header">
-          <div className="section-title-group">
-            <h2>Top Deals Today</h2>
-            <p>The biggest price drops on essentials in Hargeisa.</p>
-          </div>
-          <a href="#all-deals" className="view-all-link">
-            <span>View All Deals</span>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path d="M5 12h14M12 5l7 7-7 7" />
-            </svg>
-          </a>
-        </div>
-
-        {dealCategories.length > 1 && (
-          <div className="category-filter-bar" aria-label="Filter deals by category">
-            {dealCategories.map((category) => (
-              <button
-                key={category}
-                type="button"
-                className={`category-filter-btn ${selectedDealCategory === category ? 'active' : ''}`}
-                onClick={() => setSelectedDealCategory(category)}
-              >
-                {category}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {isLoadingDeals ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '48px' }}>
-            <div className="spinner spinner-teal"></div>
-          </div>
-        ) : dealsError ? (
-          <div className="no-results">{dealsError}</div>
-        ) : filteredFeaturedDeals.length > 0 ? (
-          <div className="products-grid">
-          {filteredFeaturedDeals.map((deal) => (
-            <ProductCard
-              key={deal.id}
-              product={deal}
-              onCompare={handleCompareProduct}
-            />
-          ))}
-          </div>
-        ) : (
-          <div className="no-results">
-            {featuredDeals.length > 0
-              ? 'No products were found in this category.'
-              : 'No current deals are available. Deals appear here when approved shops publish active product listings.'}
-          </div>
-        )}
-      </section>
-
-      <section id="about" className="about-section">
-        <div className="about-inner">
-          <div className="about-copy">
-            <span className="about-kicker">ABOUT MARKETEYE</span>
-            <h2>Clear local prices. Better shopping decisions.</h2>
-            <p>
-              MarketEye is a market price comparison and product availability platform. We connect
-              customers with current prices published by verified local shops, so finding an
-              affordable, available product takes minutes instead of visiting store after store.
-            </p>
-            <p>
-              Our work is to organize official products, verify participating shops, and display
-              their live listings side by side. Customers can compare prices and stock status,
-              while vendors can keep their own catalog accurate and up to date.
-            </p>
-          </div>
-          <div className="about-values">
-            <div className="about-value-card">
-              <strong>Real shop data</strong>
-              <span>Prices come from active listings posted by approved vendors.</span>
-            </div>
-            <div className="about-value-card">
-              <strong>Simple comparison</strong>
-              <span>See the cheapest, average, and highest price for one product.</span>
-            </div>
-            <div className="about-value-card">
-              <strong>Local availability</strong>
-              <span>Know which shop has an item in stock before you make the trip.</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* How it works Section */}
-      <section className="how-it-works">
-        <div className="how-it-works-inner">
-          <h2 className="how-it-works-title">Smarter Shopping in 3 Steps</h2>
-          <div className="steps-container">
-            <div className="step-card">
-              <div className="step-icon-wrapper">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <circle cx="11" cy="11" r="8"></circle>
-                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                </svg>
-              </div>
-              <h3 className="step-title">1. Search</h3>
-              <p className="step-description">
-                Type in any everyday essential. We scan thousands of local and online retailers instantly.
-              </p>
-            </div>
-
-            <div className="step-card">
-              <div className="step-icon-wrapper">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"></path>
-                </svg>
-              </div>
-              <h3 className="step-title">2. Compare</h3>
-              <p className="step-description">
-                View side-by-side price comparisons, historical trends, and availability metrics.
-              </p>
-            </div>
-
-            <div className="step-card">
-              <div className="step-icon-wrapper">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path d="m19 14-7 7-7-7M12 21V3"></path>
-                </svg>
-              </div>
-              <h3 className="step-title">3. Save</h3>
-              <p className="step-description">
-                Choose the best deal, build your shopping list, and stop overpaying for groceries.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-    </div>
+    </main>
   );
 }

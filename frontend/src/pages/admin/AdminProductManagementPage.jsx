@@ -1,6 +1,23 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import adminApi from './adminApi';
 
+const PencilIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+  </svg>
+);
+
+const TrashIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="3 6 5 6 21 6"/>
+    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+    <path d="M10 11v6"/>
+    <path d="M14 11v6"/>
+    <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+  </svg>
+);
+
 const navItems = [
   { label: 'Products', icon: '▣', active: true },
   { label: 'Approvals', icon: '✓' },
@@ -154,7 +171,7 @@ export default function AdminProductManagementPage({ onViewChange, onSignOut }) 
   };
 
   return (
-    <div className="admin-product-shell">
+    <div className="admin-product-shell admin-product-clean">
       <aside className="admin-product-sidebar">
         <div className="admin-product-brand">MarketEye</div>
 
@@ -179,43 +196,27 @@ export default function AdminProductManagementPage({ onViewChange, onSignOut }) 
             </button>
           ))}
         </nav>
-
-        <button
-          type="button"
-          className="admin-product-add-btn"
-          onClick={() => {
-            resetForm();
-            setNotice('Fill out product details to create a new official product.');
-          }}
-        >
-          + New Catalog Item
-        </button>
       </aside>
 
       <section className="admin-product-content">
         <div className="admin-product-header-row">
           <div>
-            <h1>Official Product Management</h1>
-            <p>Create, update, and maintain the official product catalog.</p>
+            <span className="admin-page-eyebrow">Catalog administration</span>
+            <h1>Product Management</h1>
+            <p>Add products and keep the official catalog organized.</p>
           </div>
-
-          <div className="admin-product-searchbox">
-            <span>⌕</span>
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder="Search catalog..."
-            />
-          </div>
-          <button type="button" className="admin-signout-btn" onClick={onSignOut}>
-            Sign out
-          </button>
+          <button type="button" className="admin-signout-btn" onClick={onSignOut}>Sign out</button>
         </div>
 
         <div className="admin-product-grid">
           <form onSubmit={saveCatalogItem} className="admin-product-card">
-            <div className="admin-product-card-title">{editingId ? 'Edit Product' : 'Create Official Product'}</div>
+            <div className="admin-product-form-heading">
+              <span className="admin-product-form-step">+</span>
+              <div>
+                <h2>{editingId ? 'Edit product' : 'Add a product'}</h2>
+                <p>{editingId ? 'Update the selected catalog item.' : 'Create an item vendors can list in their shops.'}</p>
+              </div>
+            </div>
 
             <label className="admin-product-field">
               <span>Product Name *</span>
@@ -286,7 +287,21 @@ export default function AdminProductManagementPage({ onViewChange, onSignOut }) 
           </form>
 
           <div className="admin-product-card admin-product-table-card">
-            <div className="admin-product-card-title">Product Catalog ({items.length})</div>
+            <div className="admin-product-catalog-toolbar">
+              <div>
+                <h2>Product Catalog</h2>
+                <p>{filteredItems.length} of {items.length} products</p>
+              </div>
+              <label className="admin-product-searchbox">
+                <input
+                  type="search"
+                  value={searchTerm}
+                  onChange={(event) => setSearchTerm(event.target.value)}
+                  placeholder="Search products..."
+                  aria-label="Search product catalog"
+                />
+              </label>
+            </div>
 
             <div className="admin-product-table-head" style={{ gridTemplateColumns: '2fr 2fr 1fr 1.5fr' }}>
               <span>Product Name</span>
@@ -314,15 +329,17 @@ export default function AdminProductManagementPage({ onViewChange, onSignOut }) 
                       type="button"
                       className="admin-product-action-btn edit"
                       onClick={() => startEditingProduct(item)}
+                      title="Edit product"
                     >
-                      Edit
+                      <PencilIcon />
                     </button>
                     <button
                       type="button"
                       className="admin-product-action-btn delete"
                       onClick={() => deleteCatalogItem(item)}
+                      title="Delete product"
                     >
-                      Delete
+                      <TrashIcon />
                     </button>
                   </div>
                 </div>

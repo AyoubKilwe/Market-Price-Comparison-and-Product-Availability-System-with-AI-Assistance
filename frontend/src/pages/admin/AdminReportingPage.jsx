@@ -1,229 +1,35 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import adminApi from './adminApi';
+import { BarChart, DonutChart, LineChart } from '../../components/charts/AnalyticsCharts';
 
-const navItems = [
-  { label: 'Products', icon: '▣' },
-  { label: 'Approvals', icon: '✓' },
-  { label: 'Shops', icon: '🏪' },
-  { label: 'Listings', icon: '🧾' },
-  { label: 'Reporting', icon: '📊', active: true },
-];
+const navItems = ['Products', 'Approvals', 'Shops', 'Listings', 'Reporting'];
+const routes = { Products: 'admin-product', Approvals: 'admin-approval', Shops: 'admin-shop', Listings: 'admin-listings', Reporting: 'admin-reporting' };
+const icons = { Products: '▣', Approvals: '✓', Shops: '⌂', Listings: '≡', Reporting: '▥' };
+
+const downloadCsv = (data) => {
+  const rows = [['MarketEye Analytics Report'], ['Generated', data.generatedAt], [], ['Metric', 'Value'], ...Object.entries(data.overview || {}), [], ['Shop', 'Vendor', 'Status', 'Listings', 'Active', 'Available', 'Average Price'], ...(data.shops?.performance || []).map((row) => [row.shopName, row.vendor, row.status, row.listings, row.activeListings, row.availableListings, row.averagePrice ?? ''])];
+  const csv = rows.map((row) => row.map((value) => `"${String(value ?? '').replaceAll('"', '""')}"`).join(',')).join('\n');
+  const link = document.createElement('a'); link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' })); link.download = `marketeye-analytics-${new Date().toISOString().slice(0, 10)}.csv`; link.click(); URL.revokeObjectURL(link.href);
+};
 
 export default function AdminReportingPage({ onViewChange, onSignOut }) {
-  const [activeItem, setActiveItem] = useState('Reporting');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [stats, setStats] = useState({
-    totalProducts: 0,
-    totalShops: 0,
-    approvedShops: 0,
-    pendingShops: 0,
-    totalVendors: 0,
-    activeVendors: 0,
-    suspendedVendors: 0,
-    totalListings: 0,
-    activeListings: 0,
-  });
-  const [performanceRows, setPerformanceRows] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [notice, setNotice] = useState('');
-
-  // Fetch live reporting statistics from MongoDB
-  const fetchReporting = async () => {
-    setIsLoading(true);
-    try {
-      const data = await adminApi.getReporting();
-      setStats(data.stats || {});
-      setPerformanceRows(data.shops || []);
-    } catch (error) {
-      setNotice(error.message || 'Failed to load system metrics.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchReporting();
-  }, []);
-
-  const overviewCards = useMemo(() => {
-    return [
-      { title: 'Total Products', value: String(stats.totalProducts ?? 0), tone: 'blue' },
-      { title: 'Registered Shops', value: String(stats.totalShops ?? 0), tone: 'teal' },
-      { title: 'Approved Shops', value: String(stats.approvedShops ?? 0), tone: 'green' },
-      { title: 'Pending Approvals', value: String(stats.pendingShops ?? 0), tone: 'amber' },
-      { title: 'Total Vendors', value: String(stats.totalVendors ?? 0), tone: 'blue' },
-      { title: 'Active Vendors', value: String(stats.activeVendors ?? 0), tone: 'green' },
-      { title: 'Suspended Vendors', value: String(stats.suspendedVendors ?? 0), tone: 'amber' },
-      { title: 'Active Listings', value: String(stats.activeListings ?? 0), tone: 'teal' },
-    ];
-  }, [stats]);
-
-  const filteredRows = useMemo(() => {
-    const query = searchTerm.trim().toLowerCase();
-    if (!query) return performanceRows;
-
-    return performanceRows.filter((row) => {
-      const vName = row.vendor?.name || '';
-      return [row.shopName, vName, row.status, row.address]
-        .join(' ')
-        .toLowerCase()
-        .includes(query);
-    });
-  }, [performanceRows, searchTerm]);
-
-  const toggleVisibility = async (shopId, shopName, currentStatus) => {
-    const nextStatus = currentStatus === 'Approved' ? 'Suspended' : 'Approved';
-    try {
-      await api.patch(`/api/shops/${shopId}/status`, { status: nextStatus });
-      setNotice(`Updated status for "${shopName}" to ${nextStatus}.`);
-      setPerformanceRows((current) =>
-        current.map((row) => (row._id === shopId ? { ...row, status: nextStatus } : row))
-      );
-    } catch (error) {
-      setNotice(error.message || 'Failed to update shop status.');
-    }
-  };
-
-  const handleNavigate = (label) => {
-    setActiveItem(label);
-    if (label === 'Products') return onViewChange?.('admin-product');
-    if (label === 'Approvals') return onViewChange?.('admin-approval');
-    if (label === 'Shops') return onViewChange?.('admin-shop');
-    if (label === 'Listings') return onViewChange?.('admin-listings');
-    if (label === 'Reporting') return onViewChange?.('admin-reporting');
-  };
-
-  return (
-    <div className="admin-reporting-shell">
-      <aside className="admin-reporting-sidebar">
-        <div className="admin-reporting-brand">MarketEye</div>
-
-        <div className="admin-reporting-user-card">
-          <div className="admin-reporting-avatar">A</div>
-          <div>
-            <div className="admin-reporting-user-name">System Admin</div>
-            <div className="admin-reporting-user-role">Global Management</div>
-          </div>
-        </div>
-
-        <nav className="admin-reporting-nav">
-          {navItems.map((item) => (
-            <button
-              key={item.label}
-              type="button"
-              className={`admin-reporting-nav-item ${activeItem === item.label ? 'active' : ''}`}
-              onClick={() => handleNavigate(item.label)}
-            >
-              <span className="admin-reporting-nav-icon">{item.icon}</span>
-              <span>{item.label}</span>
-            </button>
-          ))}
-        </nav>
-
-        <button type="button" className="admin-reporting-add-btn" onClick={fetchReporting}>
-          ↻ Refresh Metrics
-        </button>
-      </aside>
-
-      <section className="admin-reporting-content">
-        <div className="admin-reporting-header-row">
-          <div>
-            <h1>Admin Reporting & System Metrics</h1>
-            <p>Real-time analytics and system metrics.</p>
-          </div>
-
-          <div className="admin-reporting-searchbox">
-            <span>⌕</span>
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder="Search shops or metrics..."
-            />
-          </div>
-          <button type="button" className="admin-signout-btn" onClick={onSignOut}>
-            Sign out
-          </button>
-        </div>
-
-        {notice && (
-          <div
-            style={{
-              padding: '12px',
-              borderRadius: '8px',
-              backgroundColor: '#f0fdf4',
-              color: '#166534',
-              marginBottom: '16px',
-              fontSize: '14px',
-            }}
-          >
-            {notice}
-          </div>
-        )}
-
-        {isLoading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}>
-            <div className="spinner spinner-teal"></div>
-          </div>
-        ) : (
-          <>
-            <div className="admin-reporting-stats-grid">
-              {overviewCards.map((card) => (
-                <div key={card.title} className={`admin-reporting-stat-card ${card.tone}`}>
-                  <div className="admin-reporting-stat-label">{card.title}</div>
-                  <div className="admin-reporting-stat-value">{card.value}</div>
-                </div>
-              ))}
-            </div>
-
-            <div className="admin-reporting-table-card">
-              <div className="admin-shop-table-head">
-                <span>Shop Name</span>
-                <span>Vendor</span>
-                <span>Approval Status</span>
-                <span>Public Visibility</span>
-                <span>Actions</span>
-              </div>
-
-              {filteredRows.length > 0 ? (
-                filteredRows.map((row) => (
-                  <div key={row._id} className="admin-shop-row">
-                    <div className="admin-reporting-name-cell">{row.shopName}</div>
-                    <div>{row.vendor?.name || 'Vendor'}</div>
-                    <div>
-                      <span
-                        className={
-                          row.status === 'Approved'
-                            ? 'vendor-status active'
-                            : row.status === 'Pending'
-                            ? 'vendor-status pending'
-                            : 'vendor-status suspended'
-                        }
-                      >
-                        {row.status}
-                      </span>
-                    </div>
-                    <div>{row.status === 'Approved' ? 'Visible on Site' : 'Hidden from Site'}</div>
-                    <div>
-                      <button
-                        type="button"
-                        className="admin-reporting-toggle-btn"
-                        onClick={() => toggleVisibility(row._id, row.shopName, row.status)}
-                      >
-                        {row.status === 'Approved' ? 'Suspend Shop' : 'Approve Shop'}
-                      </button>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-secondary)' }}>
-                  No registered shops found.
-                </div>
-              )}
-            </div>
-          </>
-        )}
-      </section>
-    </div>
-  );
+  const [data, setData] = useState(null); const [loading, setLoading] = useState(true); const [error, setError] = useState(''); const [query, setQuery] = useState('');
+  useEffect(() => { adminApi.getReporting().then(setData).catch((err) => setError(err.message)).finally(() => setLoading(false)); }, []);
+  const shops = useMemo(() => (data?.shops?.performance || []).filter((row) => [row.shopName, row.vendor, row.status].join(' ').toLowerCase().includes(query.toLowerCase())), [data, query]);
+  const cards = data ? [
+    ['Total Vendors', data.overview.totalVendors, 'V'], ['Total Shops', data.overview.totalShops, 'S'], ['Total Products', data.overview.totalProducts, 'P'], ['Total Listings', data.overview.totalListings, 'L'], ['Total Searches', data.overview.totalSearches, '⌕'],
+  ] : [];
+  return <div className="admin-reporting-shell">
+    <aside className="admin-reporting-sidebar"><div className="admin-reporting-brand">MarketEye</div><div className="admin-reporting-user-card"><div className="admin-reporting-avatar">A</div><div><div className="admin-reporting-user-name">System Admin</div><div className="admin-reporting-user-role">Analytics & insights</div></div></div><nav className="admin-reporting-nav">{navItems.map((item) => <button key={item} className={`admin-reporting-nav-item ${item === 'Reporting' ? 'active' : ''}`} onClick={() => onViewChange?.(routes[item])}><span>{icons[item]}</span>{item}</button>)}</nav></aside>
+    <section className="admin-reporting-content"><header className="analytics-header"><div><span className="analytics-kicker">Live database analytics</span><h1>Reports & Analytics</h1><p>Operational, product, price, vendor, and customer insights.</p></div><div className="analytics-actions"><button onClick={() => downloadCsv(data)} disabled={!data}>Export Excel/CSV</button><button onClick={() => window.print()} disabled={!data}>Export PDF</button><button className="admin-signout-btn" onClick={onSignOut}>Sign out</button></div></header>
+    {error && <div className="analytics-error">{error}</div>}{loading ? <div className="analytics-loading">Loading live analytics…</div> : data && <>
+      <section className="analytics-overview">{cards.map(([label, value, icon]) => <article key={label}><i>{icon}</i><div><span>{label}</span><strong>{value.toLocaleString()}</strong></div></article>)}</section>
+      <div className="analytics-grid two"><section className="analytics-panel"><header><div><span>Product analytics</span><h2>Most searched products</h2></div></header><BarChart data={data.products.mostSearched} valueKey="count" /></section><section className="analytics-panel"><header><div><span>Engagement</span><h2>Most compared products</h2></div></header><BarChart data={data.products.mostCompared} valueKey="count" /></section></div>
+      <div className="analytics-grid three"><section className="analytics-panel"><header><div><span>Inventory</span><h2>Product availability</h2></div></header><DonutChart data={data.products.availability} /></section><section className="analytics-panel analytics-price-summary"><header><div><span>Price range</span><h2>Lowest & highest</h2></div></header><div><article><span>Lowest listing</span><strong>{data.prices.lowest == null ? '—' : `$${data.prices.lowest.toFixed(2)}`}</strong></article><article><span>Highest listing</span><strong>{data.prices.highest == null ? '—' : `$${data.prices.highest.toFixed(2)}`}</strong></article></div></section><section className="analytics-panel"><header><div><span>Vendor health</span><h2>Vendor status</h2></div></header><DonutChart data={data.vendors.statuses} /></section></div>
+      <section className="analytics-panel analytics-wide"><header><div><span>Historical pricing</span><h2>Average price changes over time</h2></div></header><LineChart data={data.prices.timeline} format={(value) => `$${Number(value).toFixed(2)}`} /></section>
+      <div className="analytics-grid two"><section className="analytics-panel"><header><div><span>Customer activity</span><h2>Popular searches</h2></div></header><BarChart data={data.customers.popularSearches} valueKey="count" /></section><section className="analytics-panel"><header><div><span>Customer activity</span><h2>Most viewed products</h2></div></header><BarChart data={data.customers.mostViewedProducts} valueKey="count" /></section></div>
+      <section className="analytics-panel analytics-table-panel"><header><div><span>Vendor & shop analytics</span><h2>Shop performance</h2></div><label>Search <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Shop, vendor, status…" /></label></header><div className="analytics-table-wrap"><table><thead><tr><th>Shop</th><th>Vendor</th><th>Status</th><th>Total listings</th><th>Active</th><th>Available</th><th>Avg. price</th></tr></thead><tbody>{shops.map((row) => <tr key={row._id}><td><strong>{row.shopName}</strong></td><td>{row.vendor}</td><td><span className={`analytics-status ${row.status.toLowerCase()}`}>{row.status}</span></td><td>{row.listings}</td><td>{row.activeListings}</td><td>{row.availableListings}</td><td>{row.averagePrice == null ? '—' : `$${row.averagePrice.toFixed(2)}`}</td></tr>)}</tbody></table>{!shops.length && <div className="analytics-empty">No matching shops.</div>}</div></section>
+      <footer className="analytics-generated">Generated from live database data · {new Date(data.generatedAt).toLocaleString()}</footer>
+    </>}</section>
+  </div>;
 }

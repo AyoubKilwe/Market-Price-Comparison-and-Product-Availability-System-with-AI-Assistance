@@ -1,6 +1,7 @@
 const Listing = require('../models/Listing');
 const Product = require('../models/Product');
 const asyncHandler = require('../utils/asyncHandler');
+const CustomerActivity = require('../models/CustomerActivity');
 
 const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -8,6 +9,7 @@ const getProducts = asyncHandler(async (req, res) => {
   const filter = { status: 'Active' };
 
   if (req.query.search) {
+    await CustomerActivity.create({ type: 'search', query: req.query.search.trim() });
     const search = new RegExp(escapeRegex(req.query.search.trim()), 'i');
     filter.$or = [{ name: search }, { category: search }];
   }
@@ -19,6 +21,7 @@ const getProducts = asyncHandler(async (req, res) => {
 const getProduct = asyncHandler(async (req, res) => {
   const product = await Product.findOne({ _id: req.params.id, status: 'Active' });
   if (!product) return res.status(404).json({ message: 'Product not found' });
+  await CustomerActivity.create({ type: 'view', product: product._id });
   return res.status(200).json({ product });
 });
 

@@ -9,10 +9,15 @@ import './styles/adminVendorManagement.css'
 import './styles/adminReporting.css'
 import './styles/adminResponsive.css'
 import './styles/shopCatalog.css'
+import './styles/vendorPortalV2.css'
 import App from './App.jsx'
+import AppErrorBoundary from './components/AppErrorBoundary.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <App />
+    <AppErrorBoundary>
+      <App />
+    </AppErrorBoundary>
   </StrictMode>,
 )
+

@@ -1,18 +1,36 @@
 import { useState, useRef, useEffect } from 'react';
 import customerApi from '../pages/customer/customerApi';
 
+const AI_NOTICE_ACCEPTED_KEY = 'marketeye_ai_product_notice_accepted';
+
 export default function AiAssistant() {
   const [isOpen, setIsOpen] = useState(false);
+  const [hasAcceptedNotice, setHasAcceptedNotice] = useState(() => {
+    try {
+      return localStorage.getItem(AI_NOTICE_ACCEPTED_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
   const [messages, setMessages] = useState([
     {
       id: 'welcome',
       sender: 'bot',
-      text: 'Hello! I am your MarketEye assistant. Ask me about products, cheapest shops, or comparisons in Hargeisa!',
+      text: 'Hi! I can help you find products, compare prices, and discover the best local shops. What are you looking for today?',
     },
   ]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
+
+  const acceptProductNotice = () => {
+    try {
+      localStorage.setItem(AI_NOTICE_ACCEPTED_KEY, 'true');
+    } catch {
+      // The notice still closes when browser storage is unavailable.
+    }
+    setHasAcceptedNotice(true);
+  };
 
   // Scroll to bottom of chat
   useEffect(() => {
@@ -70,7 +88,11 @@ export default function AiAssistant() {
         className="ai-trigger"
         onClick={() => setIsOpen(!isOpen)}
         title="Open AI Assistant"
+        aria-label={isOpen ? 'Close MarketEye AI' : 'Open MarketEye AI'}
       >
+        <span className="ai-trigger-spark">✦</span>
+        <span className="ai-trigger-label">Ask MarketEye</span>
+        <span className="ai-trigger-icon">
         <svg
           width="24"
           height="24"
@@ -86,6 +108,7 @@ export default function AiAssistant() {
           <circle cx="12" cy="5" r="2" />
           <path d="M12 7v4M8 15h.01M16 15h.01" />
         </svg>
+        </span>
       </button>
 
       {/* Expandable Chat Card */}
@@ -110,8 +133,8 @@ export default function AiAssistant() {
                 </svg>
               </div>
               <div>
-                <div className="ai-chat-title">MARKETEYE AI</div>
-                <div className="ai-chat-subtitle">Powered by Gemini</div>
+                <div className="ai-chat-title">MarketEye AI <span>Beta</span></div>
+                <div className="ai-chat-subtitle"><i></i> Online · Ready to help</div>
               </div>
             </div>
             <button
@@ -144,7 +167,7 @@ export default function AiAssistant() {
                 }`}
               >
                 {msg.sender === 'bot' && (
-                  <div className="chat-avatar">🤖</div>
+                  <div className="chat-avatar">✦</div>
                 )}
                 <div
                   className={`chat-bubble ${
@@ -175,7 +198,7 @@ export default function AiAssistant() {
             
             {isLoading && (
               <div className="chat-message-row message-row-bot">
-                <div className="chat-avatar">🤖</div>
+                <div className="chat-avatar">✦</div>
                 <div className="chat-bubble bubble-bot" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <span>Thinking</span>
                   <div className="spinner spinner-teal" style={{ width: '12px', height: '12px', borderHeight: '2px' }}></div>
@@ -185,7 +208,7 @@ export default function AiAssistant() {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Footer & Suggestion Pills */}
+          {/* Footer */}
           <div className="ai-chat-footer">
             <form
               onSubmit={(e) => {
@@ -222,8 +245,25 @@ export default function AiAssistant() {
               </button>
             </form>
           </div>
+
+          {!hasAcceptedNotice && (
+            <div className="ai-notice-overlay">
+              <section className="ai-notice-dialog" role="dialog" aria-modal="true" aria-labelledby="ai-notice-title" aria-describedby="ai-notice-description">
+                <div className="ai-notice-icon" aria-hidden="true">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M12 16v-4M12 8h.01" />
+                  </svg>
+                </div>
+                <h2 id="ai-notice-title">Before you use MarketEye AI</h2>
+                <p id="ai-notice-description">This assistant is trained only to help you find products, compare their prices, and check availability in MarketEye shops. Please do not ask it about unrelated topics.</p>
+                <button type="button" className="ai-notice-accept-btn" onClick={acceptProductNotice} autoFocus>Accept</button>
+              </section>
+            </div>
+          )}
         </div>
       )}
     </>
   );
 }
+

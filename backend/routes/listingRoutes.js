@@ -8,6 +8,7 @@ const {
   getFeaturedListings,
   getMyListings,
   getShopListings,
+  recordListingView,
   updateListing,
 } = require('../controllers/listingController');
 const protect = require('../middleware/authMiddleware');
@@ -37,6 +38,7 @@ router.post(
   createListing
 );
 router.get('/my-listings', protect, authorize('Vendor'), getMyListings);
+router.post('/:id/view', param('id').isMongoId().withMessage('A valid listing ID is required'), body('visitorId').optional().isString().isLength({ max: 100 }), validate, recordListingView);
 router.put(
   '/:id',
   protect,

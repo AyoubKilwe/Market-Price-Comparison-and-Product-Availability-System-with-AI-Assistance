@@ -4,9 +4,10 @@ const validate = (req, res, next) => {
   const errors = validationResult(req);
 
   if (!errors.isEmpty()) {
+    const validationErrors = errors.array();
     return res.status(400).json({
-      message: 'Validation failed',
-      errors: errors.array().map(({ path, msg, value }) => ({ field: path, message: msg, value })),
+      message: validationErrors[0]?.msg || 'Please check the information you entered and try again.',
+      errors: validationErrors.map(({ path, msg, value }) => ({ field: path, message: msg, value })),
     });
   }
 
